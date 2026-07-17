@@ -142,10 +142,10 @@ export function BookingFlow({ car: carProp, vehicleModel, reservationToken, vehi
 
   const renderStep = () => {
     switch (step) {
-      case 1: return <Step1 car={car} onNext={nextStep} initialData={bookingData} />;
-      case 2: return <Step2 car={car} onNext={nextStep} onPrev={prevStep} initialData={bookingData} uploadContextId={contextId} />;
-      case 3: return <Step3 car={car} bookingData={bookingData} onNext={nextStep} onPrev={prevStep} vehicleModelId={resolvedVehicleModelId} />;
-      case 4: return <Step4 car={car} bookingData={bookingData} onPrev={prevStep} onComplete={completeBooking} vehicleModelId={resolvedVehicleModelId} uploadContextId={contextId} />;
+      case 1: return <Step1 car={car!} onNext={nextStep} initialData={bookingData} />;
+      case 2: return <Step2 car={car!} onNext={nextStep} onPrev={prevStep} initialData={bookingData} uploadContextId={contextId} />;
+      case 3: return <Step3 car={car!} bookingData={bookingData} onNext={nextStep} onPrev={prevStep} vehicleModelId={resolvedVehicleModelId} />;
+      case 4: return <Step4 car={car!} bookingData={bookingData} onPrev={prevStep} onComplete={completeBooking} vehicleModelId={resolvedVehicleModelId} uploadContextId={contextId} />;
       default: return null;
     }
   };
