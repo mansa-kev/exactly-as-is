@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CTA Image</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #FF6B00;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background: #FFF5F0;
+        }
+        .upload-area.dragover {
+            background: #FFF5F0;
+            border-color: #FF8C00;
+        }
+        button {
+            background: #FF6B00;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #FF8C00;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px auto;
+            border-radius: 5px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload CTA Image</h1>
+        <p>This tool will help you upload your CTA image to Supabase Storage and get the permanent URL.</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <div id="uploadText">
+                <p>Click here or drag and drop your image</p>
+                <p style="font-size: 12px; color: #666;">Supports: JPG, PNG, GIF (Max 5MB)</p>
+            </div>
+            <img id="preview" class="preview" style="display: none;">
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="uploadBtn" disabled>Upload to Supabase</button>
+            <button id="copyBtn" style="display: none;">Copy URL</button>
+        </div>
+        
+        <div id="result" class="result"></div>
+        
+        <div id="instructions" style="display: none; margin-top: 20px;">
+            <h3>Next Steps:</h3>
+            <ol>
+                <li>Copy the URL above</li>
+                <li>Open <code>src/components/public/PublicHome.tsx</code></li>
+                <li>Replace the image URL on line 79 with your new URL</li>
+                <li>Save the file and refresh your website</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const result = document.getElementById('result');
+        const preview = document.getElementById('preview');
+        const uploadText = document.getElementById('uploadText');
+        const instructions = document.getElementById('instructions');
+        
+        let selectedFile = null;
+        
+        // Supabase configuration
+        const SUPABASE_URL = 'https://edroffvtzrowpsooszqh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_kHHCZxwXi3vC9WAtSdmnCQ_j1rLgKRS';
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+        
+        function handleFileSelect(file) {
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File size must be less than 5MB');
+                return;
+            }
+            
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file');
+                return;
+            }
+            
+            selectedFile = file;
+            uploadBtn.disabled = false;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                uploadText.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+            
+            try {
+                // Generate unique filename
+                const timestamp = Date.now();
+                const filename = `cta-image-${timestamp}.${selectedFile.name.split('.').pop()}`;
+                
+                // Upload to Supabase
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                
+                const response = await fetch(`${SUPABASE_URL}/storage/v1/object/public/public_assets/${filename}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': selectedFile.type
+                    },
+                    body: selectedFile
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/public_assets/${filename}`;
+                showSuccess(imageUrl);
+                
+            } catch (error) {
+                showError('Upload failed: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload to Supabase';
+            }
+        });
+        
+        copyBtn.addEventListener('click', () => {
+            const url = copyBtn.getAttribute('data-url');
+            navigator.clipboard.writeText(url).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy URL';
+                }, 2000);
+            });
+        });
+        
+        function showSuccess(imageUrl) {
+            result.className = 'result success';
+            result.innerHTML = `
+                <h3>Upload Successful!</h3>
+                <p>Your image has been uploaded to Supabase Storage.</p>
+                <div class="code-block">${imageUrl}</div>
+                <p>Use this URL in your CTA section.</p>
+            `;
+            result.style.display = 'block';
+            copyBtn.style.display = 'inline-block';
+            copyBtn.setAttribute('data-url', imageUrl);
+            instructions.style.display = 'block';
+        }
+        
+        function showError(message) {
+            result.className = 'result error';
+            result.innerHTML = `<h3>Error</h3><p>${message}</p>`;
+            result.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Images</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Image Loading Test</h1>
+    
+    <div class="debug-section">
+        <h2>Supabase Connection Test</h2>
+        <div id="supabase-test">Testing...</div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Image Settings Test</h2>
+        <div id="images-test">Testing...</div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        const supabaseUrl = 'https://edroffvtzrowpsooszqh.supabase.co';
+        const supabaseAnonKey = 'sb_publishable_kHHCZxwXi3vC9WAtSdmnCQ_j1rLgKRS';
+        
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        
+        // Test Supabase connection
+        async function testSupabase() {
+            const result = document.getElementById('supabase-test');
+            try {
+                const { data, error } = await supabase.from('app_settings').select('key, value').limit(1);
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">Supabase Error: ${error.message}</div>`;
+                    console.error('Supabase error:', error);
+                } else {
+                    result.innerHTML = `<div class="success">Supabase connection successful! Found ${data.length} settings.</div>`;
+                    console.log('Supabase data:', data);
+                }
+            } catch (e) {
+                result.innerHTML = `<div class="error">Connection Error: ${e.message}</div>`;
+                console.error('Connection error:', e);
+            }
+        }
+        
+        // Test image loading
+        async function testImages() {
+            const result = document.getElementById('images-test');
+            try {
+                const imageKeys = ['homepage_cta_image', 'about_hero_image', 'about_team_image', 'about_mission_image'];
+                const { data, error } = await supabase
+                    .from('app_settings')
+                    .select('key, value')
+                    .in('key', imageKeys);
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">Image Error: ${error.message}</div>`;
+                    console.error('Image error:', error);
+                } else {
+                    const images = {};
+                    data?.forEach(setting => {
+                        images[setting.key] = setting.value;
+                    });
+                    
+                    result.innerHTML = `
+                        <div class="success">Found ${data.length} image settings:</div>
+                        <ul>
+                            ${Object.entries(images).map(([key, value]) => 
+                                `<li><strong>${key}:</strong> ${value || 'Not set'}</li>`
+                            ).join('')}
+                        </ul>
+                    `;
+                    console.log('Images data:', images);
+                }
+            } catch (e) {
+                result.innerHTML = `<div class="error">Image Loading Error: ${e.message}</div>`;
+                console.error('Image loading error:', e);
+            }
+        }
+        
+        // Run tests
+        testSupabase();
+        testImages();
+    </script>
+</body>
+</html>
