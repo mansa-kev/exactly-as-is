@@ -1,0 +1,231 @@
+{
+  "entities": {
+    "user_profiles": {
+      "title": "User Profiles",
+      "description": "Stores additional user metadata linked to auth.users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid", "description": "Primary Key, Foreign Key to auth.users.id" },
+        "full_name": { "type": "string" },
+        "phone_number": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "last_login": { "type": "string", "format": "date-time" },
+        "role": { "type": "string", "enum": ["admin", "fleet_owner", "client", "driver"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "role"]
+    },
+    "cars": {
+      "title": "Cars",
+      "description": "Fleet size, car types, and utilization data.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "fleet_owner_id": { "type": "string", "format": "uuid", "description": "FK to user_profiles.id" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "integer" },
+        "color": { "type": "string" },
+        "license_plate": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "primary_image_url": { "type": "string" },
+        "photos": { "type": "array", "items": { "type": "string" }, "description": "Array of URLs" },
+        "video_url": { "type": "string" },
+        "transmission": { "type": "string" },
+        "fuel_type": { "type": "string" },
+        "seats": { "type": "integer" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "location_lat": { "type": "number" },
+        "location_lon": { "type": "number" },
+        "status": { "type": "string", "enum": ["available", "rented", "maintenance", "unavailable"] },
+        "maintenance_status": { "type": "string", "enum": ["ok", "due", "in_progress"] },
+        "last_maintenance_date": { "type": "string", "format": "date" },
+        "next_service_date": { "type": "string", "format": "date" },
+        "daily_rate": { "type": "number" },
+        "overtime_rate": { "type": "number" },
+        "security_deposit": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "fleet_owner_id", "make", "model", "license_plate", "status", "daily_rate"]
+    },
+    "bookings": {
+      "title": "Bookings",
+      "description": "Car rental bookings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "car_id": { "type": "string", "format": "uuid", "description": "FK to cars.id" },
+        "client_id": { "type": "string", "format": "uuid", "description": "FK to user_profiles.id" },
+        "fleet_owner_id": { "type": "string", "format": "uuid", "description": "FK to user_profiles.id" },
+        "start_date": { "type": "string", "format": "date" },
+        "end_date": { "type": "string", "format": "date" },
+        "total_amount": { "type": "number" },
+        "platform_commission": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "on_trip", "completed", "cancelled", "pending_payment_verification"] },
+        "payment_status": { "type": "string", "enum": ["paid", "pending", "failed"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "car_id", "client_id", "fleet_owner_id", "start_date", "end_date", "total_amount", "status"]
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Financial movements, including payouts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "booking_id": { "type": "string", "format": "uuid", "description": "FK to bookings.id, nullable" },
+        "user_id": { "type": "string", "format": "uuid", "description": "FK to auth.users.id" },
+        "type": { "type": "string", "enum": ["payment_in", "payout_out", "refund"] },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "transaction_code": { "type": "string", "description": "M-Pesa code" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "user_id", "type", "amount", "status"]
+    },
+    "fleet_owner_settings": {
+      "title": "Fleet Owner Settings",
+      "description": "Owner-specific configurations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid", "description": "PK, FK to user_profiles.id" },
+        "company_name": { "type": "string" },
+        "commission_rate": { "type": "number" },
+        "payout_method": { "type": "string" },
+        "payout_details": { "type": "object" },
+        "status": { "type": "string", "enum": ["active", "pending_verification", "suspended"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "commission_rate", "status"]
+    },
+    "expenses": {
+      "title": "Expenses",
+      "description": "Platform-level or owner-submitted expenses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "user_id": { "type": "string", "format": "uuid", "description": "FK to auth.users.id, nullable" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "description", "amount", "category", "date"]
+    },
+    "pricing_rules": {
+      "title": "Pricing Rules",
+      "description": "Dynamic pricing adjustments.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "rule_name": { "type": "string" },
+        "type": { "type": "string", "enum": ["seasonal", "event", "demand_multiplier"] },
+        "start_date": { "type": "string", "format": "date" },
+        "end_date": { "type": "string", "format": "date" },
+        "multiplier": { "type": "number" },
+        "car_type_filter": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "rule_name", "type", "multiplier", "status"]
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Chat messages.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "sender_id": { "type": "string", "format": "uuid", "description": "FK to auth.users.id" },
+        "receiver_id": { "type": "string", "format": "uuid", "description": "FK to auth.users.id, nullable" },
+        "booking_id": { "type": "string", "format": "uuid", "description": "FK to bookings.id, nullable" },
+        "content": { "type": "string" },
+        "read_at": { "type": "string", "format": "date-time" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sender_id", "content"]
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Global application settings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "key": { "type": "string" },
+        "value": { "type": "object" },
+        "description": { "type": "string" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "key", "value"]
+    },
+    "hero_content": {
+      "title": "Hero Content",
+      "description": "Dynamic background content for public website.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "media_url": { "type": "string" },
+        "media_type": { "type": "string", "enum": ["image", "video"] },
+        "display_order": { "type": "integer" },
+        "is_active": { "type": "boolean" },
+        "overlay_text": { "type": "string" },
+        "deep_link_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "media_url", "media_type", "display_order", "is_active"]
+    },
+    "contracts_master": {
+      "title": "Contracts Master",
+      "description": "References to master contract PDFs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "version": { "type": "string" },
+        "pdf_url": { "type": "string" },
+        "is_active": { "type": "boolean" },
+        "uploaded_by": { "type": "string", "format": "uuid", "description": "FK to auth.users.id" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "version", "pdf_url", "is_active", "uploaded_by"]
+    },
+    "pending_payments": {
+      "title": "Pending Payments",
+      "description": "Manual payments awaiting verification.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "booking_id": { "type": "string", "format": "uuid", "description": "FK to bookings.id" },
+        "client_id": { "type": "string", "format": "uuid", "description": "FK to user_profiles.id" },
+        "amount": { "type": "number" },
+        "transaction_code": { "type": "string" },
+        "status": { "type": "string", "enum": ["submitted", "verified", "rejected"] },
+        "submitted_at": { "type": "string", "format": "date-time" },
+        "verified_by": { "type": "string", "format": "uuid", "description": "FK to auth.users.id" },
+        "verified_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "booking_id", "client_id", "amount", "transaction_code", "status", "submitted_at"]
+    },
+    "maintenance": {
+      "title": "Maintenance",
+      "description": "Maintenance records for cars.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "car_id": { "type": "string", "format": "uuid", "description": "FK to cars.id" },
+        "cost": { "type": "number" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "car_id", "cost", "date"]
+    }
+  }
+}

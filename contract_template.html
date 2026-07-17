@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Rental Agreement</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; line-height: 1.65; color: #111; max-width: 800px; margin: 0 auto; padding: 40px; font-size: 14px; }
+        .header { text-align: center; border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 24px; }
+        .logo { max-height: 80px; margin-bottom: 10px; }
+        .company-name { font-size: 22px; font-weight: bold; color: #1a365d; margin: 0; }
+        .contact-info { font-size: 13px; color: #555; margin-top: 5px; line-height: 1.5; }
+        h1 { text-align: center; font-size: 18px; text-transform: uppercase; letter-spacing: 1.5px; margin: 24px 0; }
+        h2 { font-size: 14px; text-transform: uppercase; margin-top: 22px; margin-bottom: 8px; }
+        .section { margin-bottom: 16px; }
+        p { text-align: justify; margin: 0 0 12px 0; }
+        ol { margin: 0; padding-left: 22px; }
+        ol li { margin-bottom: 10px; text-align: justify; }
+        .highlight { font-weight: bold; }
+        .signatures { display: flex; justify-content: space-between; gap: 24px; margin-top: 48px; page-break-inside: avoid; }
+        .signature-box { width: 48%; border-top: 1px solid #333; padding-top: 12px; text-align: center; min-height: 110px; }
+        .witness { margin-top: 28px; font-style: italic; text-align: justify; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="{{logoUrl}}" alt="LinkedUp Cars Logo" class="logo">
+        <h2 class="company-name">LINKEDHUB VENTURES LIMITED</h2>
+        <div class="contact-info">
+            Trading as LINKEDUP CAR HIRE SERVICES<br>
+            Convenience is always a Link Away.<br>
+            www.linkedupcarsrentals.com · office@linkedupcarsrentals.com · +254 714 764 162
+        </div>
+    </div>
+
+    <h1>Car Rental Agreement</h1>
+
+    <div class="section">
+        <p>
+            THIS AGREEMENT is made the <span class="highlight">{{agreementDay}}</span> day of <span class="highlight">{{agreementMonth}}</span>
+            Two Thousand <span class="highlight">{{agreementYearWords}}</span> (<span class="highlight">{{agreementYear}}</span>)
+            BETWEEN <span class="highlight">LINKEDUP CAR HIRE SERVICES</span> of post office box number
+            <span class="highlight">{{companyPoBox}}</span> Nairobi (hereinafter together referred to as
+            <strong>&ldquo;the Hirer&rdquo;</strong> which expression shall where the context so admits include the respective
+            Owner&rsquo;s successors in title and assigns)
+            AND <span class="highlight">{{clientName}}</span> of Identification card number
+            <span class="highlight">{{idNumber}}</span>, telephone number <span class="highlight">{{clientPhone}}</span>
+            and of post office box number <span class="highlight">{{clientPoBox}}</span> Nairobi (hereinafter together referred to as
+            <strong>&ldquo;the Hireree&rdquo;</strong> which expression shall where the context so admits include the respective
+            Customer&rsquo;s personal representatives and assigns).
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>WHEREAS</h2>
+        <p>
+            A. The Owner has agreed to rent to the Customer Motor Vehicle
+            <span class="highlight">{{vehicleDisplayName}}</span>{{vehicleEquivalentClause}} (model/make),
+            registration number <span class="highlight">{{licensePlate}}</span>, colour <span class="highlight">{{color}}</span>
+            and currently of mileage <span class="highlight">{{mileage}}</span> (the <strong>&ldquo;Motor Vehicle&rdquo;</strong>)
+            SUBJECT to the following terms and conditions:
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>IT IS AGREED as follows:</h2>
+        <ol>
+            <li>The Customer possesses a valid driver&rsquo;s license to use the Motor Vehicle.</li>
+            <li>
+                The Customer will rent the Motor Vehicle from the <span class="highlight">{{startDay}}</span> day of
+                <span class="highlight">{{startMonth}}</span> <span class="highlight">{{startYear}}</span> (the
+                <strong>&ldquo;Start Date&rdquo;</strong>) until the <span class="highlight">{{endDay}}</span> day of
+                <span class="highlight">{{endMonth}}</span> <span class="highlight">{{endYear}}</span> (the
+                <strong>&ldquo;End Date&rdquo;</strong>).
+            </li>
+            <li>
+                The Customer will pay a rental fee of Kenya Shillings <span class="highlight">{{dailyRate}}</span> per day
+                from the Start Date until the End Date when returning the Motor Vehicle. The total expected amount for this
+                rental period is <span class="highlight">KES {{totalAmount}}</span>. Payment may be made by M-PESA or Bank.
+            </li>
+            <li>
+                Late return of the Motor Vehicle may attract additional charges of Kenya Shillings
+                <span class="highlight">{{overtimeRate}}</span> per hour and in case of any extensions, the same should be
+                paid within twelve (12) hours failure to which the Motor Vehicle will be repossessed.
+            </li>
+            <li>
+                The Motor Vehicle is insured under a private insurance and the Customer is liable for damage not covered by
+                the insurance.
+            </li>
+            <li>
+                In case of an accident, the Customer should notify the Owner immediately, report to the nearest police station
+                and procure a police abstract and not to accept liability without consent of the Owner.
+            </li>
+            <li>
+                In the event the Motor Vehicle is written off, the Customer will be liable to cater for the assessment costs
+                and thirty per cent (30%) of the value of the Motor Vehicle.
+            </li>
+            <li>
+                The Customer shall use the Motor Vehicle for lawful purposes, not to sublet or allow unauthorized drivers and
+                not to use the vehicle for racing, not to carry passengers or goods for hire, under the influence of alcohol or
+                illegal activities.
+            </li>
+            <li>
+                The Customer confirms that the Motor Vehicle is received in good condition and that he/she will return the
+                Motor Vehicle in the same condition. Any damage will be assessed and charged accordingly.
+            </li>
+            <li>
+                The Customer is responsible for all traffic offences, fines, and penalties incurred during the rental period.
+            </li>
+            <li>Fuel level must be similar from the Start Date at the End Date.</li>
+            <li>
+                In case of breach of clause 6, 7 and 8 above, the Owner reserves the right to immediately repossess the Motor
+                Vehicle without any refund of money paid.
+            </li>
+            <li>This Agreement shall be governed by the laws of the Republic of Kenya.</li>
+            <li>
+                Any dispute or claim between the parties arising out of, or relating to the interpretation or performance of
+                this Agreement shall be settled amicably between the parties. Unless settled amicably within sixty (60) days
+                after receipt by one party of the other party&rsquo;s request for such amicable settlement, the matter shall be
+                referred by either party for settlement to a Court of competent jurisdiction.
+            </li>
+        </ol>
+    </div>
+
+    <p class="witness">
+        IN WITNESS whereof this Agreement has been duly executed by the parties hereto the day and year first hereinbefore written.
+    </p>
+
+    <div class="signatures">
+        <div class="signature-box">
+            <p style="margin-bottom: 8px;">For: <strong>LINKEDUP CAR HIRE SERVICES</strong></p>
+            {{companySignature}}
+            <p style="margin-top: 8px; font-size: 12px;">Authorised Signatory</p>
+        </div>
+
+        <div class="signature-box">
+            <p style="margin-bottom: 8px;"><strong>{{clientName}}</strong></p>
+            <div id="client-signature-placeholder">
+                {{clientSignature}}
+            </div>
+            <p style="margin-top: 8px; font-size: 12px;">Hireree / Customer</p>
+        </div>
+    </div>
+
+</body>
+</html>

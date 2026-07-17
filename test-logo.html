@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logo Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .logo-test { border: 1px solid #ccc; margin: 10px; padding: 10px; }
+        img { max-width: 100px; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>Logo Test Page</h1>
+    
+    <div class="logo-test">
+        <h3>Current Logo from Database:</h3>
+        <img src="https://edroffvtzrowpsooszqh.supabase.co/storage/v1/object/public/public_assets/logo-1775800259987.png" 
+             alt="Test Logo" 
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+             onload="console.log('Logo loaded successfully');">
+        <div style="display:none; color:red;">Logo failed to load</div>
+    </div>
+    
+    <div class="logo-test">
+        <h3>Database Info:</h3>
+        <p>Logo URL: https://edroffvtzrowpsooszqh.supabase.co/storage/v1/object/public/public_assets/logo-1775800259987.png</p>
+        <p>Storage Bucket: public_assets</p>
+        <p>File Name: logo-1775800259987.png</p>
+    </div>
+    
+    <script>
+        // Test if image loads
+        const img = new Image();
+        img.onload = function() {
+            console.log('Logo test: SUCCESS - Image loads');
+            document.body.innerHTML += '<div style="color:green;">Logo test: SUCCESS - Image loads correctly</div>';
+        };
+        img.onerror = function() {
+            console.log('Logo test: FAILED - Image does not load');
+            document.body.innerHTML += '<div style="color:red;">Logo test: FAILED - Image does not load</div>';
+        };
+        img.src = 'https://edroffvtzrowpsooszqh.supabase.co/storage/v1/object/public/public_assets/logo-1775800259987.png';
+    </script>
+</body>
+</html>

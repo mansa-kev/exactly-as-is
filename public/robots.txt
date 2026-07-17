@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Block admin and portal routes from indexing
+Disallow: /admin/
+Disallow: /client/
+Disallow: /fleet/
+Disallow: /login
+Disallow: /api/
+
+Sitemap: https://linkedupcarsrentals.com/sitemap.xml

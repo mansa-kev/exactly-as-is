@@ -1,0 +1,2 @@
+src/components/admin/AdminBookings.tsx(344,15): error TS2322: Type '{ key: string; booking: Booking; onManage: () => void; onViewDetails: () => void; onDelete: () => void; }' is not assignable to type '{ booking: Booking; onManage: () => void; onViewDetails: () => void; onDelete: () => void; }'.
+  Property 'key' does not exist on type '{ booking: Booking; onManage: () => void; onViewDetails: () => void; onDelete: () => void; }'.

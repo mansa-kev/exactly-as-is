@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" fill="none">
+  <rect width="320" height="200" fill="#1e293b"/>
+  <path d="M48 128h224l-20-48h-40l-12 24H80l-12 24z" fill="#334155"/>
+  <circle cx="96" cy="136" r="18" fill="#0f172a" stroke="#64748b" stroke-width="4"/>
+  <circle cx="224" cy="136" r="18" fill="#0f172a" stroke="#64748b" stroke-width="4"/>
+  <text x="160" y="92" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="14">Vehicle photo</text>
+</svg>
