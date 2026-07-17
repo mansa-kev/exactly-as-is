@@ -1161,7 +1161,7 @@ const app = express();
         return res.status(400).json({ success: false, error: amountCheck.error });
       }
 
-      const financials = await computeBookingFinancials(supabase, carRow, fleetOwnerId, total);
+      const financials = await computeBookingFinancials(supabase, carRow, fleetOwnerId!, total);
       const statusToken = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/-/g, '');
 
       const payload = {
