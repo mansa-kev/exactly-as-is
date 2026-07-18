@@ -1,294 +1,319 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  LineChart, Line
+import {
+  Activity, Users, Eye, Clock, TrendingUp, Globe2, Smartphone, Monitor, Tablet,
+  MapPin, Car, Link2, Loader2, RefreshCw, ChevronRight
+} from 'lucide-react';
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip as RTooltip, BarChart, Bar, PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Activity, MapPin, MousePointerClick, Filter, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
+type Range = 7 | 30 | 90;
+
+interface OverviewRow {
+  day: string; page_views: number; unique_visitors: number; unique_sessions: number;
+  new_visitors: number; avg_session_seconds: number; bounce_rate: number;
+}
+interface GeoRow { country: string; region: string | null; city: string | null; visits: number; visitors: number }
+interface VehicleRow { vehicle_id: string; label: string; impressions: number; clicks: number; bookings_started: number; bookings_completed: number }
+interface FunnelRow { step: string; count: number }
+interface DeviceRow { device_type: string; sessions: number }
+interface RefRow { source: string; sessions: number }
+interface PageRow { page_path: string; views: number; avg_time: number | null }
+
+const RANGE_LABEL: Record<Range, string> = { 7: 'Last 7 days', 30: 'Last 30 days', 90: 'Last 90 days' };
+
 export function AdminAnalyticsCenter() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [range, setRange] = useState<Range>(7);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
+  const [refreshing, setRefreshing] = useState(false);
+  const [overview, setOverview] = useState<OverviewRow[]>([]);
+  const [geo, setGeo] = useState<GeoRow[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
+  const [funnel, setFunnel] = useState<FunnelRow[]>([]);
+  const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [refs, setRefs] = useState<RefRow[]>([]);
+  const [pages, setPages] = useState<PageRow[]>([]);
 
-  useEffect(() => {
-    fetchData();
-  }, [timeRange]);
-
-  const fetchData = async () => {
+  const load = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('analytics_events').select('*').order('created_at', { ascending: false });
-      
-      if (timeRange === '7d') {
-        const d = new Date(); d.setDate(d.getDate() - 7);
-        query = query.gte('created_at', d.toISOString());
-      } else if (timeRange === '30d') {
-        const d = new Date(); d.setDate(d.getDate() - 30);
-        query = query.gte('created_at', d.toISOString());
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setEvents(data || []);
-    } catch (err: any) {
-      toast.error('Failed to load analytics: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+      const [o, g, v, f, d, r, p] = await Promise.all([
+        supabase.rpc('get_traffic_overview', { _days: range }),
+        supabase.rpc('get_geo_breakdown', { _days: range }),
+        supabase.rpc('get_top_vehicles', { _days: range }),
+        supabase.rpc('get_funnel_breakdown', { _days: range }),
+        supabase.rpc('get_device_breakdown', { _days: range }),
+        supabase.rpc('get_referrer_breakdown', { _days: range }),
+        supabase.rpc('get_top_pages', { _days: range }),
+      ]);
+      if (o.error) throw o.error;
+      setOverview(o.data || []);
+      setGeo(g.data || []); setVehicles(v.data || []); setFunnel(f.data || []);
+      setDevices(d.data || []); setRefs(r.data || []); setPages(p.data || []);
+    } catch (e: any) {
+      toast.error('Failed to load analytics: ' + (e.message || 'unknown'));
+    } finally { setLoading(false); }
   };
 
-  // Aggregations
-  const pageViews = events.filter(e => e.event_type === 'page_view');
-  const uniqueSessions = new Set(events.map(e => e.session_id)).size;
-  
-  // Daily Traffic
-  const dailyTrafficMap = pageViews.reduce((acc: any, e) => {
-    const date = new Date(e.created_at).toLocaleDateString();
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {});
-  const dailyTrafficData = Object.keys(dailyTrafficMap).map(k => ({ date: k, views: dailyTrafficMap[k] })).reverse();
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      await supabase.rpc('refresh_analytics_rollups', { _days: Math.min(range, 7) });
+      await load();
+      toast.success('Rollups refreshed');
+    } catch (e: any) {
+      toast.error('Refresh failed: ' + (e.message || 'unknown'));
+    } finally { setRefreshing(false); }
+  };
 
-  // Top Neighborhoods (from BookingFlow pickupLocation)
-  const pickupLocations = events
-    .filter(e => e.event_type === 'booking_step' && e.metadata?.pickupLocation)
-    .reduce((acc: any, e) => {
-      const loc = e.metadata.pickupLocation.toLowerCase();
-      acc[loc] = (acc[loc] || 0) + 1;
-      return acc;
-    }, {});
-  const topNeighborhoods = Object.keys(pickupLocations)
-    .map(k => ({ location: k, count: pickupLocations[k] }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [range]);
 
-  // General Regions
-  const regions = events.reduce((acc: any, e) => {
-    if (e.region && e.region !== 'Unknown') {
-      acc[e.region] = (acc[e.region] || 0) + 1;
+  const totals = useMemo(() => {
+    const acc = { pv: 0, uv: 0, us: 0, nv: 0, avg: 0, br: 0 };
+    if (!overview.length) return acc;
+    for (const r of overview) {
+      acc.pv += r.page_views; acc.uv += r.unique_visitors; acc.us += r.unique_sessions;
+      acc.nv += r.new_visitors; acc.avg += Number(r.avg_session_seconds || 0); acc.br += Number(r.bounce_rate || 0);
     }
+    acc.avg = acc.avg / overview.length;
+    acc.br = acc.br / overview.length;
     return acc;
-  }, {});
-  const topRegions = Object.keys(regions)
-    .map(k => ({ region: k, count: regions[k] }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+  }, [overview]);
 
-  // Most Clicked Cars
-  const carClicks = events
-    .filter(e => e.event_type === 'click' && e.event_name === 'vehicle_card')
-    .reduce((acc: any, e) => {
-      const model = e.metadata?.model || 'Unknown Model';
-      acc[model] = (acc[model] || 0) + 1;
-      return acc;
-    }, {});
-  const topCars = Object.keys(carClicks)
-    .map(k => ({ model: k, clicks: carClicks[k] }))
-    .sort((a, b) => b.clicks - a.clicks)
-    .slice(0, 5);
+  const countryAgg = useMemo(() => {
+    const m = new Map<string, { visits: number; visitors: number }>();
+    for (const g of geo) {
+      const c = m.get(g.country) || { visits: 0, visitors: 0 };
+      c.visits += Number(g.visits); c.visitors += Number(g.visitors);
+      m.set(g.country, c);
+    }
+    return Array.from(m.entries()).map(([country, v]) => ({ country, ...v })).sort((a, b) => b.visits - a.visits).slice(0, 12);
+  }, [geo]);
 
-  // Hourly Traffic Heatmap
-  const hourlyTrafficMap = pageViews.reduce((acc: any, e) => {
-    const hour = new Date(e.created_at).getHours();
-    acc[hour] = (acc[hour] || 0) + 1;
-    return acc;
-  }, {});
-  const hourlyTrafficData = Array.from({ length: 24 }).map((_, i) => ({
-    hour: `${i.toString().padStart(2, '0')}:00`,
-    views: hourlyTrafficMap[i] || 0
-  }));
-
-  // Funnel tracking
-  const bookingSteps = events.filter(e => e.event_type === 'booking_step');
-  const funnelSteps = [
-    { step: 'Step 1: Dates & Location', count: bookingSteps.filter(e => e.event_name === 'completed_dates_and_location').length },
-    { step: 'Step 2: Client Details', count: bookingSteps.filter(e => e.event_name === 'completed_personal_details').length },
-    { step: 'Step 3: Signed Contract', count: bookingSteps.filter(e => e.event_name === 'completed_documents').length },
-  ];
-
-  // Action Clicks
-  const actionClicks = events.filter(e => e.event_type === 'click');
-  const waClicks = actionClicks.filter(e => e.event_name === 'whatsapp_support').length;
-  const callbackClicks = actionClicks.filter(e => e.event_name === 'request_callback').length;
-  const signupClicks = actionClicks.filter(e => e.event_name === 'sign_up_submit').length;
-
-  if (loading) {
-    return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-primary" size={32} /></div>;
-  }
+  const DEVICE_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))', 'hsl(var(--secondary))'];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Analytics Center</h1>
-          <p className="text-sm text-muted-foreground">Comprehensive traffic and engagement tracking.</p>
-        </div>
-        <select 
-          value={timeRange}
-          onChange={(e) => setTimeRange(e.target.value as any)}
-          className="px-4 py-2 bg-card border border-border rounded-xl outline-none"
-        >
-          <option value="7d">Last 7 Days</option>
-          <option value="30d">Last 30 Days</option>
-          <option value="all">All Time</option>
-        </select>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <Activity className="text-primary mb-3" size={24} />
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Page Views</h3>
-          <p className="text-3xl font-black">{pageViews.length}</p>
-        </div>
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <Activity className="text-emerald-500 mb-3" size={24} />
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Unique Sessions</h3>
-          <p className="text-3xl font-black">{uniqueSessions}</p>
-        </div>
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <MousePointerClick className="text-blue-500 mb-3" size={24} />
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">WhatsApp Clicks</h3>
-          <p className="text-3xl font-black">{waClicks}</p>
-        </div>
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <MousePointerClick className="text-amber-500 mb-3" size={24} />
-          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Callback Requests</h3>
-          <p className="text-3xl font-black">{callbackClicks}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Booking Funnel Chart */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Booking Flow Funnel</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={funnelSteps} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" horizontal={false} />
-                <XAxis type="number" stroke="#888" fontSize={12} />
-                <YAxis dataKey="step" type="category" stroke="#888" fontSize={11} width={120} />
-                <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '12px' }} />
-                <Bar dataKey="count" fill="#d4af37" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-[1400px] mx-auto p-6 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+              <Activity className="w-6 h-6 text-primary" />
+              Analytics Center
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Server-side ingestion · GeoIP · bot-filtered · pre-aggregated</p>
           </div>
-        </div>
-
-        {/* Hourly Traffic Heatmap */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Hourly Traffic</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyTrafficData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                <XAxis dataKey="hour" stroke="#888" fontSize={11} interval={3} />
-                <YAxis stroke="#888" fontSize={12} />
-                <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: '#1f1f1f', borderColor: '#333', borderRadius: '12px' }} />
-                <Bar dataKey="views" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Daily Traffic */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Daily Page Views</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dailyTrafficData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                <XAxis dataKey="date" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                <RechartsTooltip contentStyle={{ backgroundColor: '#111', borderColor: '#333' }} />
-                <Line type="monotone" dataKey="views" stroke="#FBBF24" strokeWidth={3} dot={{ fill: '#111', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Top Cars */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Most Clicked Models</h3>
-          {topCars.length > 0 ? (
-            <div className="space-y-4">
-              {topCars.map((car, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{idx + 1}</span>
-                    <span className="font-bold text-sm">{car.model}</span>
-                  </div>
-                  <span className="text-primary font-bold">{car.clicks} clicks</span>
-                </div>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-border overflow-hidden bg-card">
+              {([7, 30, 90] as Range[]).map(r => (
+                <button key={r} onClick={() => setRange(r)}
+                  className={`px-3 py-2 text-sm font-medium transition ${range === r ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
+                  {r}d
+                </button>
               ))}
             </div>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Not enough data yet.</div>
-          )}
-        </div>
+            <button onClick={refresh} disabled={refreshing}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-sm">
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh rollups
+            </button>
+          </div>
+        </header>
 
-        {/* Neighborhoods */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-2">Neighborhood Interest</h3>
-          <p className="text-xs text-muted-foreground mb-6">Based on typed Pickup Locations in booking flow.</p>
-          {topNeighborhoods.length > 0 ? (
-            <div className="space-y-4">
-              {topNeighborhoods.map((loc, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <MapPin size={16} className="text-primary" />
-                    <span className="font-bold text-sm capitalize">{loc.location}</span>
-                  </div>
-                  <span className="text-muted-foreground font-bold text-sm">{loc.count} searches</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">Not enough booking data yet.</div>
-          )}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-32">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            {/* KPI cards */}
+            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <Kpi icon={<Eye />} label="Page views" value={fmtInt(totals.pv)} sub={RANGE_LABEL[range]} />
+              <Kpi icon={<Users />} label="Unique visitors" value={fmtInt(totals.uv)} sub={`${fmtInt(totals.nv)} new`} />
+              <Kpi icon={<Activity />} label="Sessions" value={fmtInt(totals.us)} />
+              <Kpi icon={<Clock />} label="Avg session" value={fmtDur(totals.avg)} />
+              <Kpi icon={<TrendingUp />} label="Bounce rate" value={`${totals.br.toFixed(1)}%`} />
+              <Kpi icon={<Globe2 />} label="Countries" value={fmtInt(countryAgg.length)} />
+            </section>
 
-        {/* Regions */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Global Regions (IP Based)</h3>
-          {topRegions.length > 0 ? (
-            <div className="space-y-4">
-              {topRegions.map((loc, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <span className="font-bold text-sm">{loc.region}</span>
-                  <span className="text-muted-foreground font-bold text-sm">{loc.count} visits</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">Not enough IP data yet.</div>
-          )}
-        </div>
-        {/* Top Cars By Clicks */}
-        <div className="p-6 bg-card border border-border rounded-2xl">
-          <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Top Cars by Engagement</h3>
-          <div className="space-y-4">
-            {topCars.map((item: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-xl hover:bg-accent/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">
-                    #{idx + 1}
-                  </div>
-                  <span className="font-medium text-sm">{item.model}</span>
-                </div>
-                <span className="text-xs font-bold px-3 py-1 bg-background rounded-full border border-border">
-                  {item.clicks} clicks
-                </span>
+            {/* Traffic trend */}
+            <Card title="Traffic over time" icon={<Activity className="w-4 h-4" />}>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={overview}>
+                    <defs>
+                      <linearGradient id="gPV" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gUV" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12}
+                      tickFormatter={(d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <RTooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+                    <Legend />
+                    <Area type="monotone" dataKey="page_views" name="Page views" stroke="hsl(var(--primary))" fill="url(#gPV)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="unique_visitors" name="Visitors" stroke="hsl(var(--accent))" fill="url(#gUV)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-            {topCars.length === 0 && (
-              <p className="text-muted-foreground text-sm text-center py-4">No vehicle clicks recorded yet.</p>
-            )}
-          </div>
-        </div>
+            </Card>
+
+            {/* Two-column: Geo + Devices */}
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Card title="Top countries" icon={<Globe2 className="w-4 h-4" />} className="lg:col-span-2">
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={countryAgg} layout="vertical" margin={{ left: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis type="category" dataKey="country" stroke="hsl(var(--muted-foreground))" fontSize={12} width={100} />
+                      <RTooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+                      <Bar dataKey="visits" name="Visits" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+
+              <Card title="Devices" icon={<Smartphone className="w-4 h-4" />}>
+                <div className="h-72 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={devices} dataKey="sessions" nameKey="device_type" cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={4}>
+                        {devices.map((_, i) => <Cell key={i} fill={DEVICE_COLORS[i % DEVICE_COLORS.length]} />)}
+                      </Pie>
+                      <RTooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </section>
+
+            {/* Geo detail + Referrers */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card title="Cities & regions" icon={<MapPin className="w-4 h-4" />}>
+                <Table
+                  columns={['Location', 'Visits', 'Visitors']}
+                  rows={geo.slice(0, 15).map(g => [
+                    <span key="l" className="flex items-center gap-2">
+                      <span className="font-medium">{g.city || g.region || g.country}</span>
+                      <span className="text-xs text-muted-foreground">{g.country}</span>
+                    </span>,
+                    fmtInt(g.visits), fmtInt(g.visitors),
+                  ])} />
+              </Card>
+
+              <Card title="Traffic sources" icon={<Link2 className="w-4 h-4" />}>
+                <Table
+                  columns={['Source', 'Sessions']}
+                  rows={refs.map(r => [r.source, fmtInt(r.sessions)])} />
+              </Card>
+            </section>
+
+            {/* Funnel + Vehicles */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card title="Booking funnel" icon={<ChevronRight className="w-4 h-4" />}>
+                <div className="space-y-2">
+                  {funnel.length === 0 && <p className="text-sm text-muted-foreground">No booking activity yet.</p>}
+                  {funnel.map((f, i) => {
+                    const max = funnel[0]?.count || 1;
+                    const pct = (Number(f.count) / max) * 100;
+                    return (
+                      <div key={f.step}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="capitalize">{f.step.replace(/_/g, ' ')}</span>
+                          <span className="text-muted-foreground">{fmtInt(f.count)} {i > 0 && <span className="ml-2 text-xs">({((Number(f.count) / Number(funnel[0].count)) * 100).toFixed(0)}%)</span>}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-primary to-accent" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              <Card title="Top vehicles" icon={<Car className="w-4 h-4" />}>
+                <Table
+                  columns={['Vehicle', 'Clicks', 'Started', 'Booked']}
+                  rows={vehicles.slice(0, 10).map(v => [v.label || v.vehicle_id, fmtInt(v.clicks), fmtInt(v.bookings_started), fmtInt(v.bookings_completed)])} />
+              </Card>
+            </section>
+
+            {/* Top pages */}
+            <Card title="Top pages" icon={<Monitor className="w-4 h-4" />}>
+              <Table
+                columns={['Path', 'Views', 'Avg time on page']}
+                rows={pages.map(p => [p.page_path, fmtInt(p.views), p.avg_time ? fmtDur(p.avg_time) : '—'])} />
+            </Card>
+          </>
+        )}
       </div>
     </div>
   );
+}
+
+function Kpi({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 hover:border-primary/40 transition">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="text-primary opacity-80">{icon}</span>
+      </div>
+      <div className="mt-2 text-2xl font-semibold">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+    </div>
+  );
+}
+
+function Card({ title, icon, children, className = '' }: { title: string; icon?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-xl border border-border bg-card ${className}`}>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+        {icon && <span className="text-primary">{icon}</span>}
+        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function Table({ columns, rows }: { columns: string[]; rows: React.ReactNode[][] }) {
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">No data.</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+            {columns.map(c => <th key={c} className="py-2 pr-3 font-medium">{c}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-b border-border/50 last:border-0">
+              {r.map((cell, j) => <td key={j} className="py-2 pr-3">{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function fmtInt(n: number | string) { return Number(n || 0).toLocaleString(); }
+function fmtDur(s: number) {
+  s = Math.round(Number(s) || 0);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60); const r = s % 60;
+  return `${m}m ${r}s`;
 }
