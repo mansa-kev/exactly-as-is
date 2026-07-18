@@ -116,6 +116,11 @@ class AnalyticsService {
     this.track('booking_step', step, { metadata });
   }
 
+  /** Backward-compatible alias for legacy call-sites. */
+  trackEvent(type: AnalyticsEventType | string, name: string, data?: { page_url?: string; page_path?: string; time_spent_seconds?: number; metadata?: Record<string, any> }) {
+    this.track(type as AnalyticsEventType, name, data);
+  }
+
   private scheduleFlush() {
     if (this.queue.length >= 10) return this.flush();
     if (this.flushTimer !== null) return;
