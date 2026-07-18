@@ -25,7 +25,7 @@ export function Step3({ car, bookingData, onNext, onPrev, vehicleModelId }: Step
   const [contract, setContract] = useState<any>(null);
   const [loadingContract, setLoadingContract] = useState(true);
   const [signingContract, setSigningContract] = useState(false);
-  const [liveSignatureData, setLiveSignatureData] = useState('');
+  const [hasSignature, setHasSignature] = useState(false);
 
   const vehicle = resolveContractVehicle(car, vehicleModelId);
 
@@ -57,16 +57,12 @@ export function Step3({ car, bookingData, onNext, onPrev, vehicleModelId }: Step
     if (sigPad.current) {
       sigPad.current.clear();
     }
-    setLiveSignatureData('');
+    setHasSignature(false);
   };
 
-  const syncSignaturePreview = () => {
-    if (!sigPad.current || sigPad.current.isEmpty()) {
-      setLiveSignatureData('');
-      return;
-    }
-
-    setLiveSignatureData(sigPad.current.toDataURL());
+  const handleSignatureEnd = () => {
+    if (!sigPad.current) return;
+    setHasSignature(!sigPad.current.isEmpty());
   };
 
   const handleSignAndProceed = async () => {
@@ -84,7 +80,6 @@ export function Step3({ car, bookingData, onNext, onPrev, vehicleModelId }: Step
       setSigningContract(true);
 
       const signatureData = sigPad.current.toDataURL();
-      setLiveSignatureData(signatureData);
 
       let pdfBase64: string | null = null;
       if (contract) {
@@ -172,7 +167,7 @@ export function Step3({ car, bookingData, onNext, onPrev, vehicleModelId }: Step
               contract={contract}
               bookingData={bookingData}
               car={car}
-              signatureData={liveSignatureData}
+              signatureData=""
               vehicleModelId={vehicleModelId}
             />
           </motion.div>
@@ -202,19 +197,26 @@ export function Step3({ car, bookingData, onNext, onPrev, vehicleModelId }: Step
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block">Digital Signature</label>
-            <button
-              type="button"
-              onClick={clear}
-              className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-primary flex items-center gap-2 transition-colors"
-            >
-              <Eraser size={12} /> Clear
-            </button>
+            <div className="flex items-center gap-3">
+              {hasSignature && (
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
+                  <CheckCircle2 size={12} /> Captured
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={clear}
+                className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-primary flex items-center gap-2 transition-colors"
+              >
+                <Eraser size={12} /> Clear
+              </button>
+            </div>
           </div>
           <div className="relative h-[150px] sm:h-[200px] bg-white/5 border border-white/10 rounded-[16px] sm:rounded-[24px] overflow-hidden group hover:border-primary/30 transition-colors">
             <SignatureCanvas
               ref={sigPad}
               penColor='#D4AF37'
-              onEnd={syncSignaturePreview}
+              onEnd={handleSignatureEnd}
               clearOnResize={false}
               canvasProps={{
                 className: 'w-full h-full cursor-crosshair',
