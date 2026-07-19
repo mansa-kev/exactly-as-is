@@ -50,6 +50,7 @@ const DamageReports = React.lazy(() => importDamageReports().then(m => ({ defaul
 const FinancialCenter = React.lazy(() => importFinancialCenter().then(m => ({ default: m.FinancialCenter })));
 const FleetSettings = React.lazy(() => importFleetSettings().then(m => ({ default: m.FleetSettings })));
 const FleetConciergeBooking = React.lazy(() => importFleetConciergeBooking().then(m => ({ default: m.FleetConciergeBooking })));
+const FleetReports = React.lazy(() => importFleetReports().then(m => ({ default: m.FleetReports })));
 
 const FLEET_MODULE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   '/fleet': importFleetDashboard,
