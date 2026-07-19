@@ -1,0 +1,18 @@
+# LinkedUp Cars Rentals
+
+> Nairobi-based car hire and chauffeur service — self-drive rentals, airport transfers, corporate transport, staff shuttles and game-drive vehicles. Instant online booking with M-Pesa.
+
+## Pages
+
+- [Home](/): Fleet highlights, pricing snapshot, and instant booking entry point.
+- [Browse Cars](/cars): Full fleet — luxury, SUV, saloon, budget and utility vehicles with live availability.
+- [How It Works](/how-it-works): Booking flow, documents required, deposits, delivery and return process.
+- [About](/about): Company background, service areas across Nairobi, Kiambu Road, Ridgeways, Westlands and Karen.
+- [FAQ](/faq): Common questions on eligibility, insurance, mileage, extensions, delivery and payments.
+- [Insights](/insights): Articles on car hire in Kenya, travel guides, and self-drive tips.
+- [Contact](/contact): Phone, email, WhatsApp and office locations.
+
+## Optional
+
+- [Terms](/terms): Rental agreement terms and conditions.
+- [Privacy](/privacy): Privacy policy and data handling.
