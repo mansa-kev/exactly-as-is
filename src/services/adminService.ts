@@ -2062,6 +2062,129 @@ export const adminService = {
     }
   },
 
+  // --- Per-Car Report Card ---
+  // Returns a full financial + operational snapshot for a single car.
+  // rangeDays limits the trend window (default 180 days).
+  getCarReport: async (carId: string, rangeDays: number = 180) => {
+    try {
+      const since = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const [carRes, bookingsRes, expensesRes, maintenanceRes] = await Promise.all([
+        supabase.from('cars').select('*, fleet_owner:user_profiles(*)').eq('id', carId).maybeSingle(),
+        supabase
+          .from('bookings')
+          .select('id, start_date, end_date, total_amount, status, payment_status, created_at, user_profiles(full_name)')
+          .eq('car_id', carId)
+          .order('start_date', { ascending: false }),
+        supabase
+          .from('expenses')
+          .select('id, amount, type, category, description, created_at, meta')
+          .eq('car_id', carId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('maintenance')
+          .select('id, cost, description, service_date, created_at')
+          .eq('car_id', carId)
+          .order('created_at', { ascending: false }),
+      ]);
+
+      if (carRes.error) throw carRes.error;
+      const car = carRes.data;
+      const bookings = bookingsRes.data || [];
+      const expenses = expensesRes.data || [];
+      const maintenance = maintenanceRes.data || [];
+
+      const paidBookings = bookings.filter(
+        (b: any) =>
+          PAID_REVENUE_STATUSES_DB.includes(b.status) && b.payment_status === 'paid',
+      );
+
+      const totalRevenue = paidBookings.reduce((s: number, b: any) => s + Number(b.total_amount || 0), 0);
+      const totalExpenses = expenses.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+      const totalMaintenance = maintenance.reduce((s: number, m: any) => s + Number(m.cost || 0), 0);
+      const netProfit = totalRevenue - totalExpenses - totalMaintenance;
+      const roi = totalExpenses + totalMaintenance > 0
+        ? (netProfit / (totalExpenses + totalMaintenance)) * 100
+        : 0;
+
+      // Booking days & utilization
+      let totalBookingDays = 0;
+      paidBookings.forEach((b: any) => {
+        const d = Math.max(
+          1,
+          Math.ceil((new Date(b.end_date).getTime() - new Date(b.start_date).getTime()) / 86400000),
+        );
+        totalBookingDays += d;
+      });
+      const utilizationRate = Math.min(Math.round((totalBookingDays / Math.max(rangeDays, 1)) * 100), 100);
+      const avgDailyRevenue = totalBookingDays > 0 ? totalRevenue / totalBookingDays : 0;
+      const revenuePerTrip = paidBookings.length > 0 ? totalRevenue / paidBookings.length : 0;
+
+      // Monthly trend (revenue vs cost) for last rangeDays
+      const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const monthly: Record<string, { month: string; revenue: number; cost: number; trips: number }> = {};
+      const seedMonths = Math.min(12, Math.ceil(rangeDays / 30));
+      for (let i = seedMonths - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        d.setDate(1);
+        const k = monthKey(d);
+        monthly[k] = { month: k, revenue: 0, cost: 0, trips: 0 };
+      }
+      paidBookings.forEach((b: any) => {
+        const k = monthKey(new Date(b.start_date));
+        if (!monthly[k]) monthly[k] = { month: k, revenue: 0, cost: 0, trips: 0 };
+        monthly[k].revenue += Number(b.total_amount || 0);
+        monthly[k].trips += 1;
+      });
+      [...expenses, ...maintenance.map((m: any) => ({ ...m, amount: m.cost, created_at: m.service_date || m.created_at }))].forEach((e: any) => {
+        const k = monthKey(new Date(e.created_at));
+        if (!monthly[k]) monthly[k] = { month: k, revenue: 0, cost: 0, trips: 0 };
+        monthly[k].cost += Number(e.amount || 0);
+      });
+      const trend = Object.values(monthly).sort((a, b) => a.month.localeCompare(b.month));
+
+      // Expense breakdown by type
+      const expenseByType: Record<string, number> = {};
+      expenses.forEach((e: any) => {
+        const t = e.type || e.category || 'other';
+        expenseByType[t] = (expenseByType[t] || 0) + Number(e.amount || 0);
+      });
+      if (totalMaintenance > 0) expenseByType['maintenance'] = (expenseByType['maintenance'] || 0) + totalMaintenance;
+      const expenseBreakdown = Object.entries(expenseByType)
+        .map(([type, amount]) => ({ type, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+      const lastTrip = paidBookings[0];
+      const nextBooking = bookings.find((b: any) => new Date(b.start_date) > new Date());
+
+      return {
+        car,
+        kpis: {
+          totalRevenue,
+          totalExpenses: totalExpenses + totalMaintenance,
+          netProfit,
+          roi,
+          tripsCount: paidBookings.length,
+          totalBookingDays,
+          utilizationRate,
+          avgDailyRevenue,
+          revenuePerTrip,
+        },
+        trend,
+        expenseBreakdown,
+        recentBookings: bookings.slice(0, 10),
+        recentExpenses: expenses.slice(0, 10),
+        recentMaintenance: maintenance.slice(0, 5),
+        lastTripDate: lastTrip?.end_date || null,
+        nextBookingDate: nextBooking?.start_date || null,
+        rangeDays,
+      };
+    } catch (error) {
+      return handleSupabaseErrorWrapper(error, 'getCarReport');
+    }
+  },
+
   // --- Messages ---
   getMessages: async () => {
     const { data, error } = await supabase
