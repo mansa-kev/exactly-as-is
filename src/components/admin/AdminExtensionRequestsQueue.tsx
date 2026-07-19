@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Loader2, Clock, CheckCircle2, XCircle, CreditCard, DollarSign, Calendar, User, Car, ChevronRight, RefreshCw } from 'lucide-react';
 import { computeExtensionQuote } from '../../utils/extensionQuote';
 import { extensionPaymentService } from '../../services/extensionPaymentService';
+import { checkExtensionEligibility, EXTENSION_CUTOFF_HOURS } from '../../utils/extensionWindow';
 
 type OpenStatus = 'requested' | 'quoted' | 'awaiting_payment';
 
