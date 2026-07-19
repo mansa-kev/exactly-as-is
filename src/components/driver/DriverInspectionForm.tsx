@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadInspectionPhoto } from '../../services/inspectionUploadService';
+import { CameraCapture } from '../public/BookingFlow/CameraCapture';
 import { resolveDocumentPreviewUrl } from '../../utils/documentPreviewUrl';
 import {
   submitBookingPickup,
