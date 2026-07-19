@@ -148,10 +148,7 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
     }
   };
 
-  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>, target: 'fuel' | 'exterior' | 'interior') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processUpload = async (file: File, target: 'fuel' | 'exterior' | 'interior') => {
     const localPreview = URL.createObjectURL(file);
     if (target === 'fuel') {
       setPhotoFuelMileage(localPreview);
@@ -176,9 +173,22 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
     } finally {
       URL.revokeObjectURL(localPreview);
       setUploading(null);
-      e.target.value = '';
     }
   };
+
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>, target: 'fuel' | 'exterior' | 'interior') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processUpload(file, target);
+    e.target.value = '';
+  };
+
+  const handleCameraCapture = async (file: File) => {
+    const target = cameraTarget;
+    setCameraTarget(null);
+    if (target) await processUpload(file, target);
+  };
+
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
