@@ -491,3 +491,55 @@ export function MyInbox() {
     </div>
   );
 }
+
+function PayExtensionButton({ extensionId, phone: initialPhone, onPaid }: { extensionId: string; phone: string; onPaid: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [phone, setPhone] = useState(initialPhone || '');
+  const [showPhone, setShowPhone] = useState(false);
+
+  const handlePay = async () => {
+    if (!phone) { setShowPhone(true); return; }
+    setBusy(true);
+    try {
+      const res = await extensionPaymentService.initiateSTKPush({ phone, extensionId });
+      if (!res.success || !res.paymentRequestId) {
+        toast.error(res.error || 'Failed to start STK push');
+        setBusy(false);
+        return;
+      }
+      toast.info('STK Push sent to your phone. Enter your M-Pesa PIN…');
+      const outcome = await extensionPaymentService.pollUntilPaid(res.paymentRequestId, extensionId);
+      if (outcome === 'paid') {
+        toast.success('Extension paid & applied');
+        onPaid();
+      } else if (outcome === 'failed') {
+        toast.error('Payment failed. Please try again.');
+      } else {
+        toast.error('Payment timed out. Check your M-Pesa messages or retry.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (showPhone) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          type="tel" placeholder="07XXXXXXXX" value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="px-3 py-2 bg-muted rounded-lg text-xs w-32 outline-none"
+        />
+        <button onClick={handlePay} disabled={busy || !phone} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />} Pay
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={handlePay} disabled={busy} className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-primary/90 disabled:opacity-50">
+      {busy ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />} Pay Now
+    </button>
+  );
+}
