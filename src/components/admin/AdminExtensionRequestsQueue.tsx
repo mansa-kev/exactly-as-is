@@ -239,6 +239,19 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
       }
       const { error } = await supabase.from('booking_extensions').update(update).eq('id', row.id);
       if (error) throw error;
+      const clientId = (row as any).bookings?.client_id;
+      if (clientId) {
+        await supabase.from('notifications').insert({
+          user_id: clientId,
+          title: advanceToAwaiting ? 'Extension Ready for Payment' : 'Extension Quote Updated',
+          content: advanceToAwaiting
+            ? `Your extension has been approved. Amount due: KES ${Number(quote.total).toLocaleString()}. New return: ${new Date(quote.newEndDate).toLocaleString()}.`
+            : `Admin prepared a quote of KES ${Number(quote.total).toLocaleString()} for your extension request.`,
+          type: advanceToAwaiting ? 'warning' : 'info',
+          is_read: false,
+          link: `/bookings/${row.booking_id}`,
+        }).then(() => {}, (e: any) => console.error('[ext-notif]', e));
+      }
       toast.success(advanceToAwaiting ? 'Quote approved — client can now pay' : 'Quote saved');
       onChange();
     } catch (e: any) {
