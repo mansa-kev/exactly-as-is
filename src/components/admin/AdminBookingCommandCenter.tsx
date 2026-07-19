@@ -2015,46 +2015,92 @@ export function AdminBookingCommandCenter() {
       {/* Add Extension Modal */}
       {activeModal === 'extend' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95">
+          <div className="bg-card border border-border rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="p-6 md:p-8">
               <h3 className="text-xl font-black mb-1">Add Extension</h3>
-              <p className="text-sm text-muted-foreground mb-8">Extend rental period and log additional charges.</p>
-              
-              <div className="space-y-5">
+              <p className="text-sm text-muted-foreground mb-6">Extend the rental period. The client will be charged the balance below.</p>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Extra Days</label>
-                  <input 
-                    type="number" min="1" 
-                    value={extensionDays} 
-                    onChange={e => {
-                      const days = parseInt(e.target.value) || 0;
-                      setExtensionDays(days);
-                      setExtensionCost(days * (booking.cars?.daily_rate || 0));
-                    }}
+                  <input
+                    type="number" min="0"
+                    value={extensionDays}
+                    onChange={e => setExtensionDays(Math.max(0, parseInt(e.target.value) || 0))}
                     className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl font-black text-lg focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Extension Cost (KES)</label>
-                  <input 
-                    type="number" min="0" 
-                    value={extensionCost} 
-                    onChange={e => setExtensionCost(parseInt(e.target.value) || 0)}
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Extra Hours</label>
+                  <input
+                    type="number" min="0" max="23"
+                    value={extensionHours}
+                    onChange={e => setExtensionHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
                     className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl font-black text-lg focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8">
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Admin Fee</label>
+                  <input type="number" min="0" value={extensionAdminFee}
+                    onChange={e => setExtensionAdminFee(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full px-3 py-2.5 bg-muted/50 border border-border rounded-xl font-bold text-sm" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Discount</label>
+                  <input type="number" min="0" value={extensionDiscount}
+                    onChange={e => setExtensionDiscount(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-full px-3 py-2.5 bg-muted/50 border border-border rounded-xl font-bold text-sm" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Tax %</label>
+                  <input type="number" min="0" max="100" step="0.1"
+                    value={extensionTaxRate * 100}
+                    onChange={e => setExtensionTaxRate(Math.max(0, (parseFloat(e.target.value) || 0) / 100))}
+                    className="w-full px-3 py-2.5 bg-muted/50 border border-border rounded-xl font-bold text-sm" />
+                </div>
+              </div>
+
+              {/* Live quote */}
+              <div className="bg-muted/40 border border-border rounded-2xl p-4 space-y-2 mb-6">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-bold uppercase tracking-widest">New Return</span>
+                  <span className="font-black">{new Date(extensionQuote.newEndDate).toLocaleString()}</span>
+                </div>
+                <div className="h-px bg-border" />
+                {extensionQuote.lines.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Enter days or hours to see a breakdown.</p>
+                ) : extensionQuote.lines.map(line => (
+                  <div key={line.key} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{line.label}</span>
+                    <span className={`font-bold ${line.amount < 0 ? 'text-green-500' : ''}`}>{formatQuoteAmount(line.amount, extensionQuote.currency)}</span>
+                  </div>
+                ))}
+                <div className="h-px bg-border" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-widest">Client Pays</span>
+                  <span className="text-lg font-black text-primary">{formatQuoteAmount(extensionQuote.total, extensionQuote.currency)}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
                 <button onClick={() => setActiveModal(null)} className="flex-1 py-3.5 bg-muted text-muted-foreground rounded-xl font-black text-sm hover:bg-muted/80 transition-colors">Cancel</button>
-                <button onClick={handleAddExtension} disabled={isSubmitting} className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
-                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Confirm'}
+                <button
+                  onClick={handleAddExtension}
+                  disabled={isSubmitting || extensionQuote.totalHours <= 0}
+                  className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : (extensionQuote.total > 0 ? 'Queue for Payment' : 'Apply Extension')}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+
 
       {/* Flag Modal */}
       {activeModal === 'flag' && (
