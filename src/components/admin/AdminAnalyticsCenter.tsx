@@ -36,6 +36,26 @@ export function AdminAnalyticsCenter() {
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [refs, setRefs] = useState<RefRow[]>([]);
   const [pages, setPages] = useState<PageRow[]>([]);
+  const [liveUsers, setLiveUsers] = useState<number>(0);
+
+  // Realtime: distinct visitors in the last 5 minutes, polled every 30s
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      const since = new Date(Date.now() - 5 * 60_000).toISOString();
+      const { data } = await supabase
+        .from('analytics_events')
+        .select('visitor_id')
+        .gte('created_at', since)
+        .limit(2000);
+      if (cancelled) return;
+      const unique = new Set((data || []).map((r: any) => r.visitor_id).filter(Boolean));
+      setLiveUsers(unique.size);
+    };
+    poll();
+    const t = setInterval(poll, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
 
   const load = async () => {
     setLoading(true);
