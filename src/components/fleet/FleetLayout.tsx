@@ -65,7 +65,7 @@ const FLEET_MODULE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   '/fleet/vault': importDigitalVault,
   '/fleet/growth': importGrowthAndInsights,
   '/fleet/settings': importFleetSettings,
-};
+  '/fleet/reports': importFleetReports,
 
 const scheduleIdle = (cb: () => void) => {
   if (typeof window === 'undefined') return () => {};
