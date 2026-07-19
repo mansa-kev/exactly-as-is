@@ -204,8 +204,9 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
     hours,
     adminFee: fee,
     discount,
-    taxRate,
+    taxRate: taxRate / 100,
   }), [currentEnd, dailyRate, days, hours, fee, discount, taxRate]);
+
 
   const isAwaiting = row.status === 'awaiting_payment';
   const isPending = row.status === 'requested' || row.status === 'quoted';
