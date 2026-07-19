@@ -4,9 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 import { clientService } from '../../services/clientService';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Inbox, Send, Plus, Clock, MessageSquare, User, Shield, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Inbox, Send, Plus, Clock, MessageSquare, User, Shield, AlertCircle, CheckCircle2, XCircle, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getMessageThreadKey } from '../../utils/messagingThread';
+import { extensionPaymentService } from '../../services/extensionPaymentService';
+
 
 export function MyInbox() {
   const { user } = useAuth();
@@ -393,23 +395,43 @@ export function MyInbox() {
             <h3 className="text-lg font-semibold mb-6">Request History</h3>
             <div className="space-y-4">
               {extensionRequests.length > 0 ? (
-                extensionRequests.map(req => (
+                extensionRequests.map(req => {
+                  const isAwaiting = req.status === 'awaiting_payment' && req.payment_status !== 'paid';
+                  const outstanding = Math.max(Number(req.total_amount || 0) - Number(req.amount_paid || 0), 0);
+                  return (
                   <div key={req.id} className="p-4 border border-border rounded-xl">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-bold text-sm">{req.bookings.cars.make} {req.bookings.cars.model}</p>
-                        <p className="text-xs text-muted-foreground">Requested until: {new Date(req.new_end_date).toLocaleDateString()}</p>
+                        <p className="font-bold text-sm">{req.bookings?.cars?.make} {req.bookings?.cars?.model}</p>
+                        <p className="text-xs text-muted-foreground">New return: {new Date(req.new_end_date).toLocaleString()}</p>
                       </div>
                       <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-lg ${
-                        req.status === 'approved' ? 'bg-green-100 text-green-600' : 
-                        req.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
+                        req.status === 'applied' || req.payment_status === 'paid' ? 'bg-green-100 text-green-600' :
+                        req.status === 'rejected' || req.status === 'cancelled' ? 'bg-red-100 text-red-600' :
+                        isAwaiting ? 'bg-orange-100 text-orange-600' :
+                        'bg-yellow-100 text-yellow-600'
                       }`}>
-                        {req.status}
+                        {isAwaiting ? 'Awaiting Payment' : req.status}
                       </span>
                     </div>
                     {req.reason && <p className="text-xs text-muted-foreground italic mt-2">"{req.reason}"</p>}
+                    {isAwaiting && outstanding > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase text-muted-foreground">Amount Due</p>
+                          <p className="text-lg font-black text-primary">KES {outstanding.toLocaleString()}</p>
+                        </div>
+                        <PayExtensionButton
+                          extensionId={req.id}
+                          phone={user?.phone || currentUser?.phone || ''}
+                          onPaid={() => window.location.reload()}
+                        />
+                      </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
+
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Clock size={32} className="mx-auto mb-2 opacity-20" />
@@ -467,5 +489,57 @@ export function MyInbox() {
         </div>
       )}
     </div>
+  );
+}
+
+function PayExtensionButton({ extensionId, phone: initialPhone, onPaid }: { extensionId: string; phone: string; onPaid: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [phone, setPhone] = useState(initialPhone || '');
+  const [showPhone, setShowPhone] = useState(false);
+
+  const handlePay = async () => {
+    if (!phone) { setShowPhone(true); return; }
+    setBusy(true);
+    try {
+      const res = await extensionPaymentService.initiateSTKPush({ phone, extensionId });
+      if (!res.success || !res.paymentRequestId) {
+        toast.error(res.error || 'Failed to start STK push');
+        setBusy(false);
+        return;
+      }
+      toast.info('STK Push sent to your phone. Enter your M-Pesa PIN…');
+      const outcome = await extensionPaymentService.pollUntilPaid(res.paymentRequestId, extensionId);
+      if (outcome === 'paid') {
+        toast.success('Extension paid & applied');
+        onPaid();
+      } else if (outcome === 'failed') {
+        toast.error('Payment failed. Please try again.');
+      } else {
+        toast.error('Payment timed out. Check your M-Pesa messages or retry.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (showPhone) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          type="tel" placeholder="07XXXXXXXX" value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="px-3 py-2 bg-muted rounded-lg text-xs w-32 outline-none"
+        />
+        <button onClick={handlePay} disabled={busy || !phone} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />} Pay
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={handlePay} disabled={busy} className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-primary/90 disabled:opacity-50">
+      {busy ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />} Pay Now
+    </button>
   );
 }
