@@ -8,6 +8,7 @@ import { Inbox, Send, Plus, Clock, MessageSquare, User, Shield, AlertCircle, Che
 import { toast } from 'sonner';
 import { getMessageThreadKey } from '../../utils/messagingThread';
 import { extensionPaymentService } from '../../services/extensionPaymentService';
+import { checkExtensionEligibility } from '../../utils/extensionWindow';
 
 
 export function MyInbox() {
