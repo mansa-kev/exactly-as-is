@@ -157,7 +157,7 @@ export function Dashboard() {
             </div>
             <div className="p-4 bg-muted rounded-xl">
               <p className="text-sm text-muted-foreground">Countdown</p>
-              <p className="font-bold text-primary">{formatCountdown(data.activeBooking.end_date)}</p>
+              <p className="font-bold text-primary">{formatCountdown(data.activeBooking)}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
