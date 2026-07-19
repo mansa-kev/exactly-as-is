@@ -74,6 +74,8 @@ export function AdminBookingCommandCenter() {
   const [adminMessage, setAdminMessage] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [outboxMessage, setOutboxMessage] = useState<string | null>(null);
+  const [sentChannels, setSentChannels] = useState<{ email?: string; whatsapp?: string; sms?: string }>({});
   const [isVerifying, setIsVerifying] = useState(false);
   const [regeneratingContract, setRegeneratingContract] = useState(false);
   const [isSyncingPayment, setIsSyncingPayment] = useState(false);
@@ -633,7 +635,20 @@ export function AdminBookingCommandCenter() {
   const enterCommunicateStep = (mode: CommunicateMode) => {
     setCommunicateMode(mode);
     setAdminMessage(buildMessage(mode));
+    setAdditionalNotes('');
+    setOutboxMessage(null);
+    setSentChannels({});
     setActiveTab('communications');
+  };
+
+  const composedMessage = () =>
+    adminMessage.trim() + (additionalNotes.trim() ? `\n\nAdmin Notes:\n${additionalNotes.trim()}` : '');
+
+  const lockToOutbox = (): string => {
+    if (outboxMessage) return outboxMessage;
+    const msg = composedMessage();
+    setOutboxMessage(msg);
+    return msg;
   };
 
   const handleSyncNcbaPayment = async () => {
@@ -814,7 +829,7 @@ export function AdminBookingCommandCenter() {
 
   const handleSendMessage = async () => {
     setIsSending(true);
-    const fullMsg = adminMessage.trim() + (additionalNotes.trim() ? `\n\nAdmin Notes:\n${additionalNotes.trim()}` : '');
+    const fullMsg = lockToOutbox();
     const subject = communicateMode === 'approval'
       ? 'Booking Confirmed — LinkedUp Cars'
       : communicateMode === 'payment_rejected'
@@ -858,9 +873,8 @@ export function AdminBookingCommandCenter() {
         fetchBooking(true);
       }
 
+      setSentChannels(prev => ({ ...prev, email: new Date().toISOString() }));
       toast.success('Email sent successfully!');
-      setAdminMessage('');
-      setAdditionalNotes('');
     } catch (e: any) {
       toast.error('Failed to send message');
     } finally {
@@ -870,11 +884,27 @@ export function AdminBookingCommandCenter() {
 
   const openWhatsApp = async () => {
     if (!hasPhone) { toast.error('No valid phone number on record'); return; }
-    const text = encodeURIComponent(adminMessage.trim() + (additionalNotes.trim() ? `\n\nAdmin Notes:\n${additionalNotes.trim()}` : ''));
-    window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank', 'noopener,noreferrer');
-
+    const msg = lockToOutbox();
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+    setSentChannels(prev => ({ ...prev, whatsapp: new Date().toISOString() }));
     toast.message('WhatsApp opened — send the message manually from your device.');
   };
+
+  const copyOutbox = async () => {
+    const msg = outboxMessage || composedMessage();
+    try {
+      await navigator.clipboard.writeText(msg);
+      toast.success('Message copied to clipboard');
+    } catch {
+      toast.error('Copy failed');
+    }
+  };
+
+  const resetOutbox = () => {
+    setOutboxMessage(null);
+    setSentChannels({});
+  };
+
 
   // --- Reusable Layout Components ---
   const SectionCard = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
@@ -1728,55 +1758,102 @@ export function AdminBookingCommandCenter() {
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Message Content</p>
-                  <textarea
-                    value={adminMessage}
-                    onChange={e => setAdminMessage(e.target.value)}
-                    rows={12}
-                    className="w-full bg-muted/20 border border-border rounded-xl px-4 py-4 text-sm text-foreground resize-y focus:outline-none focus:border-primary font-mono leading-relaxed"
-                  />
-                </div>
+              {!outboxMessage ? (
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Message Content</p>
+                    <textarea
+                      value={adminMessage}
+                      onChange={e => setAdminMessage(e.target.value)}
+                      rows={12}
+                      className="w-full bg-muted/20 border border-border rounded-xl px-4 py-4 text-sm text-foreground resize-y focus:outline-none focus:border-primary font-mono leading-relaxed"
+                    />
+                  </div>
 
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Admin Notes (Appended)</p>
-                  <textarea
-                    value={additionalNotes}
-                    onChange={e => setAdditionalNotes(e.target.value)}
-                    placeholder="Add any extra instructions..."
-                    rows={3}
-                    className="w-full bg-muted/20 border border-border rounded-xl px-4 py-3 text-sm text-foreground resize-none focus:outline-none focus:border-primary"
-                  />
-                </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Admin Notes (Appended)</p>
+                    <textarea
+                      value={additionalNotes}
+                      onChange={e => setAdditionalNotes(e.target.value)}
+                      placeholder="Add any extra instructions..."
+                      rows={3}
+                      className="w-full bg-muted/20 border border-border rounded-xl px-4 py-3 text-sm text-foreground resize-none focus:outline-none focus:border-primary"
+                    />
+                  </div>
 
-                <div className="flex gap-3 pt-4 border-t border-border">
-                  {hasPhone && (
+                  <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
                     <button
-                      onClick={openWhatsApp}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-black hover:bg-green-700 transition-colors"
+                      onClick={() => { if (adminMessage.trim()) lockToOutbox(); else toast.error('Message is empty'); }}
+                      disabled={!adminMessage.trim()}
+                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-black hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                      <Phone size={16} /> WhatsApp
+                      <Send size={16} /> Lock &amp; Prepare Dispatch
                     </button>
-                  )}
-                  {hasPhone && (
-                    <button
-                      onClick={() => toast.info('SMS integration coming soon')}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-black hover:bg-blue-700 transition-colors"
-                    >
-                      <MessageSquare size={16} /> SMS
-                    </button>
-                  )}
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={isSending || !adminMessage.trim()}
-                    className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-black hover:bg-primary/90 transition-colors disabled:opacity-50"
-                  >
-                    {isSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    {communicateMode === 'approval' ? 'Resend Confirmation Email' : 'Send Message'}
-                  </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">Locking freezes the message so you can send it identically across Email, WhatsApp, and SMS.</p>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-primary">Outbox — Ready to Dispatch</p>
+                    <button
+                      onClick={() => setOutboxMessage(null)}
+                      className="text-xs font-black text-muted-foreground hover:text-foreground uppercase tracking-wider"
+                    >
+                      ← Edit Again
+                    </button>
+                  </div>
+
+                  <div className="bg-muted/10 border-2 border-primary/30 rounded-xl p-4 text-sm text-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-72 overflow-y-auto">
+                    {outboxMessage}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={isSending}
+                      className={`relative flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-xl text-sm font-black transition-colors disabled:opacity-50 ${
+                        sentChannels.email ? 'bg-primary/20 text-primary border border-primary/40' : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      }`}
+                    >
+                      {isSending ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+                      <span>{sentChannels.email ? 'Resend Email' : 'Send Email'}</span>
+                      {sentChannels.email && <CheckCircle2 size={14} className="absolute top-2 right-2" />}
+                    </button>
+
+                    {hasPhone && (
+                      <button
+                        onClick={openWhatsApp}
+                        className={`relative flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-xl text-sm font-black transition-colors ${
+                          sentChannels.whatsapp ? 'bg-green-500/20 text-green-600 border border-green-500/40' : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                      >
+                        <Phone size={18} />
+                        <span>{sentChannels.whatsapp ? 'Reopen WhatsApp' : 'Open WhatsApp'}</span>
+                        {sentChannels.whatsapp && <CheckCircle2 size={14} className="absolute top-2 right-2" />}
+                      </button>
+                    )}
+
+                    <button
+                      onClick={copyOutbox}
+                      className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-muted hover:bg-muted/80 rounded-xl text-sm font-black transition-colors"
+                    >
+                      <MessageSquare size={18} />
+                      <span>Copy Text</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-border text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-3">
+                      {sentChannels.email && <span>✓ Email sent {new Date(sentChannels.email).toLocaleTimeString()}</span>}
+                      {sentChannels.whatsapp && <span>✓ WhatsApp opened {new Date(sentChannels.whatsapp).toLocaleTimeString()}</span>}
+                    </div>
+                    <button onClick={resetOutbox} className="font-black uppercase tracking-wider hover:text-foreground">
+                      Start Over
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
