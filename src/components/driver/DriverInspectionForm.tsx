@@ -459,22 +459,25 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
                   </div>
                 ))}
                 
-                <label className="border-2 border-dashed border-border rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/10 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setCameraTarget('interior')}
+                  disabled={uploading === 'interior'}
+                  className="border-2 border-dashed border-primary/40 rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 transition-colors"
+                >
                   {uploading === 'interior' ? (
                     <Loader2 className="animate-spin text-primary" size={18} />
                   ) : (
                     <>
-                      <Camera className="text-muted-foreground" size={20} />
-                      <span className="text-[10px] font-bold text-muted-foreground">Add Interior</span>
+                      <Camera className="text-primary" size={20} />
+                      <span className="text-[10px] font-black text-primary uppercase">Live Capture</span>
                     </>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleUploadFile(e, 'interior')}
-                  />
+                </button>
+                <label className="border border-dashed border-border rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/10 transition-colors">
+                  <Upload className="text-muted-foreground" size={16} />
+                  <span className="text-[10px] font-bold text-muted-foreground">Upload File</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(e, 'interior')} />
                 </label>
               </div>
             </div>
