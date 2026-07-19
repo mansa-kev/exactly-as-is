@@ -81,7 +81,7 @@ export function AdminFinancials() {
   });
   const [reservationStats, setReservationStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'partner-ledger' | 'approvals' | 'payouts'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'partner-ledger' | 'approvals' | 'payouts' | 'pnl'>(initialTab);
   const [txTab, setTxTab] = useState<'all' | 'payment_in' | 'payout_out'>('all');
 
   const fetchFinancials = async () => {
