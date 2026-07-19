@@ -61,7 +61,7 @@ export function AdminFinancials() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const initialTab =
-    tabParam === 'approvals' || tabParam === 'payouts' || tabParam === 'partner-ledger'
+    tabParam === 'approvals' || tabParam === 'payouts' || tabParam === 'partner-ledger' || tabParam === 'pnl'
       ? tabParam
       : 'overview';
   const [data, setData] = useState({
