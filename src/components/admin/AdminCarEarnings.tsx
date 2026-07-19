@@ -347,7 +347,7 @@ export function AdminCarEarnings() {
                         <BarChart3 size={12} />
                         Performance
                       </button>
-                      <button className="px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-bold hover:bg-muted/80 transition-colors flex items-center gap-2">
+                      <button onClick={() => setSelectedCar(item)} className="px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-bold hover:bg-muted/80 transition-colors flex items-center gap-2">
                         <Eye size={12} />
                         Details
                       </button>
