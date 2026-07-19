@@ -635,7 +635,20 @@ export function AdminBookingCommandCenter() {
   const enterCommunicateStep = (mode: CommunicateMode) => {
     setCommunicateMode(mode);
     setAdminMessage(buildMessage(mode));
+    setAdditionalNotes('');
+    setOutboxMessage(null);
+    setSentChannels({});
     setActiveTab('communications');
+  };
+
+  const composedMessage = () =>
+    adminMessage.trim() + (additionalNotes.trim() ? `\n\nAdmin Notes:\n${additionalNotes.trim()}` : '');
+
+  const lockToOutbox = (): string => {
+    if (outboxMessage) return outboxMessage;
+    const msg = composedMessage();
+    setOutboxMessage(msg);
+    return msg;
   };
 
   const handleSyncNcbaPayment = async () => {
