@@ -183,6 +183,13 @@ export function MyInbox() {
       return;
     }
 
+    const booking = activeBookings.find((b: any) => b.id === selectedBookingId);
+    const eligibility = checkExtensionEligibility(booking);
+    if (!eligibility.eligible) {
+      toast.error(eligibility.reason || 'This booking can no longer be extended.');
+      return;
+    }
+
     const req = {
       booking_id: selectedBookingId,
       client_id: currentUser.id,
