@@ -62,7 +62,7 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
 
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
-        .select('id, status, end_date, total_amount, return_confirmed_at')
+        .select('id, status, start_date, end_date, total_amount, return_confirmed_at, pickup_confirmed_at')
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -80,6 +80,33 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
           error: 'Extensions can only be added while the vehicle is on trip.',
         });
       }
+
+      // Enforce 6-hour cutoff before the return deadline.
+      const EXTENSION_CUTOFF_HOURS = 6;
+      const EXTENSION_CUTOFF_MS = EXTENSION_CUTOFF_HOURS * 60 * 60 * 1000;
+      const deadlineMs = (() => {
+        if (booking.pickup_confirmed_at) {
+          const pickup = new Date(booking.pickup_confirmed_at).getTime();
+          const start = booking.start_date ? new Date(booking.start_date).getTime() : NaN;
+          const end = booking.end_date ? new Date(booking.end_date).getTime() : NaN;
+          if (!Number.isNaN(pickup) && !Number.isNaN(start) && !Number.isNaN(end)) {
+            const days = Math.max(1, Math.ceil((end - start) / (24 * 60 * 60 * 1000)));
+            return pickup + days * 24 * 60 * 60 * 1000;
+          }
+        }
+        return booking.end_date ? new Date(booking.end_date).getTime() : NaN;
+      })();
+      const msLeft = Number.isFinite(deadlineMs) ? deadlineMs - Date.now() : 0;
+      if (msLeft < EXTENSION_CUTOFF_MS) {
+        const hoursLeft = Math.max(0, msLeft / (60 * 60 * 1000));
+        return res.status(409).json({
+          success: false,
+          error: msLeft <= 0
+            ? 'The booking has already reached its return deadline. Extensions are no longer possible.'
+            : `Extensions must be requested at least ${EXTENSION_CUTOFF_HOURS} hours before return (only ${hoursLeft.toFixed(1)}h left).`,
+        });
+      }
+
 
       // Anchor the extension to the current end_date; don't jump to end-of-day.
       const currentEnd = new Date(booking.end_date);
