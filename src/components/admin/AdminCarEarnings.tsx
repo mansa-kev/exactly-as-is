@@ -362,27 +362,7 @@ export function AdminCarEarnings() {
 
       {/* Modal */}
       {selectedCar && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl border border-border shadow-xl w-full max-w-2xl p-6">
-            <h3 className="font-bold text-lg mb-4">{selectedCar.model} - Earnings Details</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-muted rounded-xl">
-                <p className="text-xs font-bold text-muted-foreground">Total Revenue</p>
-                <p className="text-xl font-bold">Ksh {selectedCar.totalEarnings.toLocaleString()}</p>
-              </div>
-              <div className="p-4 bg-muted rounded-xl">
-                <p className="text-xs font-bold text-muted-foreground">Maintenance Costs</p>
-                <p className="text-xl font-bold">Ksh {selectedCar.totalMaintenance.toLocaleString()}</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setSelectedCar(null)}
-              className="mt-6 w-full py-2 bg-primary text-primary-foreground rounded-xl font-bold"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <CarReportCard carId={selectedCar.id} onClose={() => setSelectedCar(null)} />
       )}
     </div>
   );
