@@ -829,7 +829,7 @@ export function AdminBookingCommandCenter() {
 
   const handleSendMessage = async () => {
     setIsSending(true);
-    const fullMsg = adminMessage.trim() + (additionalNotes.trim() ? `\n\nAdmin Notes:\n${additionalNotes.trim()}` : '');
+    const fullMsg = lockToOutbox();
     const subject = communicateMode === 'approval'
       ? 'Booking Confirmed — LinkedUp Cars'
       : communicateMode === 'payment_rejected'
@@ -873,9 +873,8 @@ export function AdminBookingCommandCenter() {
         fetchBooking(true);
       }
 
+      setSentChannels(prev => ({ ...prev, email: new Date().toISOString() }));
       toast.success('Email sent successfully!');
-      setAdminMessage('');
-      setAdditionalNotes('');
     } catch (e: any) {
       toast.error('Failed to send message');
     } finally {
@@ -885,11 +884,27 @@ export function AdminBookingCommandCenter() {
 
   const openWhatsApp = async () => {
     if (!hasPhone) { toast.error('No valid phone number on record'); return; }
-    const text = encodeURIComponent(adminMessage.trim() + (additionalNotes.trim() ? `\n\nAdmin Notes:\n${additionalNotes.trim()}` : ''));
-    window.open(`https://wa.me/${waPhone}?text=${text}`, '_blank', 'noopener,noreferrer');
-
+    const msg = lockToOutbox();
+    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+    setSentChannels(prev => ({ ...prev, whatsapp: new Date().toISOString() }));
     toast.message('WhatsApp opened — send the message manually from your device.');
   };
+
+  const copyOutbox = async () => {
+    const msg = outboxMessage || composedMessage();
+    try {
+      await navigator.clipboard.writeText(msg);
+      toast.success('Message copied to clipboard');
+    } catch {
+      toast.error('Copy failed');
+    }
+  };
+
+  const resetOutbox = () => {
+    setOutboxMessage(null);
+    setSentChannels({});
+  };
+
 
   // --- Reusable Layout Components ---
   const SectionCard = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
