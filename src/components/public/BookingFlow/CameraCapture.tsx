@@ -36,10 +36,13 @@ export function CameraCapture({ onCapture, onClose, defaultFacing = 'environment
 
   useEffect(() => {
     startCamera();
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      document.body.style.overflow = prevOverflow;
     };
   }, [facingMode]);
 
