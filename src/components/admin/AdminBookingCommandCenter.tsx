@@ -438,6 +438,17 @@ export function AdminBookingCommandCenter() {
     }
   };
 
+  // Live extension quote — recomputed as admin tweaks inputs
+  const extensionQuote = useMemo(() => computeExtensionQuote({
+    currentEndDate: booking?.end_date || new Date().toISOString(),
+    dailyRate: Number(booking?.cars?.daily_rate) || 0,
+    days: extensionDays,
+    hours: extensionHours,
+    adminFee: extensionAdminFee,
+    discount: extensionDiscount,
+    taxRate: extensionTaxRate,
+  }), [booking?.end_date, booking?.cars?.daily_rate, extensionDays, extensionHours, extensionAdminFee, extensionDiscount, extensionTaxRate]);
+
   const handleAddExtension = async () => {
     setIsSubmitting(true);
     try {
@@ -451,13 +462,26 @@ export function AdminBookingCommandCenter() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ days_extended: extensionDays, extension_cost: extensionCost }),
+        body: JSON.stringify({
+          days_extended: extensionQuote.days,
+          hours_extended: extensionQuote.hours,
+          extension_cost: extensionQuote.total,
+          pricing_breakdown: {
+            base: extensionQuote.base,
+            admin_fee: extensionQuote.adminFee,
+            discount: extensionQuote.discount,
+            tax: extensionQuote.tax,
+            tax_rate: extensionTaxRate,
+          },
+        }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload?.success) {
         throw new Error(payload?.error || `Failed to add extension (${res.status})`);
       }
-      toast.success('Extension added successfully');
+      toast.success(extensionQuote.total > 0
+        ? `Extension queued — KES ${extensionQuote.total.toLocaleString()} pending payment`
+        : 'Extension applied');
       setActiveModal(null);
       fetchBooking(true);
     } catch (e: any) {
@@ -466,6 +490,7 @@ export function AdminBookingCommandCenter() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleCancelBooking = async () => {
     const reason = window.prompt('Enter cancellation reason (client will be notified):');
