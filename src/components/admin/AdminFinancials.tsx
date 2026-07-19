@@ -169,6 +169,8 @@ export function AdminFinancials() {
 
       {activeTab === 'approvals' ? (
         <AdminPaymentApprovals />
+      ) : activeTab === 'pnl' ? (
+        <AdminFinanceExtras />
       ) : activeTab === 'payouts' ? (
         <AdminPayoutEngine />
       ) : activeTab === 'partner-ledger' ? (
