@@ -36,10 +36,13 @@ export function CameraCapture({ onCapture, onClose, defaultFacing = 'environment
 
   useEffect(() => {
     startCamera();
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      document.body.style.overflow = prevOverflow;
     };
   }, [facingMode]);
 
@@ -71,8 +74,8 @@ export function CameraCapture({ onCapture, onClose, defaultFacing = 'environment
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-      <div className="flex items-center justify-between p-4">
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col h-[100dvh] max-h-[100dvh] supports-[height:100svh]:h-[100svh] overscroll-contain">
+      <div className="flex-shrink-0 flex items-center justify-between p-3 sm:p-4">
         <button type="button" onClick={() => { if (stream) stream.getTracks().forEach(t => t.stop()); onClose(); }} className="text-white p-2">
           <X size={24} />
         </button>
@@ -87,7 +90,7 @@ export function CameraCapture({ onCapture, onClose, defaultFacing = 'environment
         </button>
       </div>
 
-      <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+      <div className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden">
         {error ? (
           <p className="text-white/60 text-sm text-center px-8">{error}</p>
         ) : capturedImage ? (
@@ -98,7 +101,7 @@ export function CameraCapture({ onCapture, onClose, defaultFacing = 'environment
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
-      <div className="p-6 flex items-center justify-center gap-6">
+      <div className="flex-shrink-0 p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-center gap-6 bg-black">
         {capturedImage ? (
           <>
             <button type="button" onClick={() => { setCapturedImage(null); startCamera(); }} className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white">
@@ -109,7 +112,7 @@ export function CameraCapture({ onCapture, onClose, defaultFacing = 'environment
             </button>
           </>
         ) : (
-          <button type="button" onClick={capture} disabled={!!error} className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center disabled:opacity-30">
+          <button type="button" onClick={capture} disabled={!!error} aria-label="Capture photo" className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center disabled:opacity-30 active:scale-95 transition-transform">
             <div className="w-12 h-12 rounded-full bg-white" />
           </button>
         )}
