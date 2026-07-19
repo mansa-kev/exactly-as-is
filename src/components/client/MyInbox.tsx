@@ -4,9 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 import { clientService } from '../../services/clientService';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Inbox, Send, Plus, Clock, MessageSquare, User, Shield, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Inbox, Send, Plus, Clock, MessageSquare, User, Shield, AlertCircle, CheckCircle2, XCircle, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getMessageThreadKey } from '../../utils/messagingThread';
+import { extensionPaymentService } from '../../services/extensionPaymentService';
+
 
 export function MyInbox() {
   const { user } = useAuth();
