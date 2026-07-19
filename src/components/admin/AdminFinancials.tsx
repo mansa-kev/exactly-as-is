@@ -4,6 +4,7 @@ import { adminService } from '../../services/adminService';
 import { AdminPaymentApprovals } from './AdminPaymentApprovals';
 import { AdminPayoutEngine } from './AdminPayoutEngine';
 import { AdminPartnerLedger } from './AdminPartnerLedger';
+import { AdminFinanceExtras } from './AdminFinanceExtras';
 import { createEmptyPayoutBreakdown } from '../../utils/partnerFinancials';
 import { 
   DollarSign, 
