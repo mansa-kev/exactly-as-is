@@ -314,6 +314,17 @@ export function AdminBookings() {
   // --- Filtering ---
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const nowMs = Date.now();
+  const in24hMs = nowMs + 24 * 60 * 60 * 1000;
+
+  // Pickup-anchored deadline (falls back to end_date pre-pickup).
+  const deadlineMs = (b: Booking): number => {
+    const d = getReturnDeadline(b as any);
+    return d ? d.getTime() : new Date(b.end_date).getTime();
+  };
+  const isInTransit = (b: Booking) => b.status === 'on_trip' && deadlineMs(b) >= nowMs;
+  const isReturnDue = (b: Booking) => b.status === 'on_trip' && deadlineMs(b) >= nowMs && deadlineMs(b) < in24hMs;
+  const isOverdueB  = (b: Booking) => b.status === 'on_trip' && deadlineMs(b) < nowMs;
 
   const filterByTab = (b: Booking): boolean => {
     switch (activeTab) {
@@ -321,9 +332,9 @@ export function AdminBookings() {
       case 'flagged': return !!b.is_flagged;
       case 'pending_payment': return b.payment_status !== 'paid' && b.status !== 'cancelled';
       case 'pending_collection': return (b.status === 'confirmed' || b.status === 'pending_collection') && b.payment_status === 'paid';
-      case 'in_transit': return b.status === 'on_trip' && new Date(b.end_date) >= today;
-      case 'returns_due': return b.status === 'on_trip' && new Date(b.end_date) >= today && new Date(b.end_date) < tomorrow;
-      case 'overdue': return b.status === 'on_trip' && new Date(b.end_date) < today;
+      case 'in_transit': return isInTransit(b);
+      case 'returns_due': return isReturnDue(b);
+      case 'overdue': return isOverdueB(b);
       case 'extended': return b.sub_status === 'extended';
       case 'completed': return b.status === 'completed' || b.status === 'returned';
       case 'from_reservation': return bookingFromReservation(b);
@@ -346,9 +357,9 @@ export function AdminBookings() {
     flagged: bookings.filter(b => !!b.is_flagged).length,
     pending_payment: bookings.filter(b => b.payment_status !== 'paid' && b.status !== 'cancelled').length,
     pending_collection: bookings.filter(b => (b.status === 'confirmed' || b.status === 'pending_collection') && b.payment_status === 'paid').length,
-    in_transit: bookings.filter(b => b.status === 'on_trip' && new Date(b.end_date) >= today).length,
-    returns_due: bookings.filter(b => b.status === 'on_trip' && new Date(b.end_date) >= today && new Date(b.end_date) < tomorrow).length,
-    overdue: bookings.filter(b => b.status === 'on_trip' && new Date(b.end_date) < today).length,
+    in_transit: bookings.filter(isInTransit).length,
+    returns_due: bookings.filter(isReturnDue).length,
+    overdue: bookings.filter(isOverdueB).length,
     extended: bookings.filter(b => b.sub_status === 'extended').length,
     completed: bookings.filter(b => b.status === 'completed' || b.status === 'returned').length,
     from_reservation: bookings.filter((b) => bookingFromReservation(b)).length,
