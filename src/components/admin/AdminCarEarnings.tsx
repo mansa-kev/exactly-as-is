@@ -245,7 +245,7 @@ export function AdminCarEarnings() {
                         >
                           <BarChart3 size={18} />
                         </button>
-                        <button className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-primary transition-colors" title="View Details">
+                        <button onClick={() => setSelectedCar(item)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-primary transition-colors" title="View Details">
                           <Eye size={18} />
                         </button>
                       </div>
