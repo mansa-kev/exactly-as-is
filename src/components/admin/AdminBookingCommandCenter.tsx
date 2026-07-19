@@ -59,7 +59,11 @@ export function AdminBookingCommandCenter() {
   const [flagReason, setFlagReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [extensionDays, setExtensionDays] = useState(1);
-  const [extensionCost, setExtensionCost] = useState(0);
+  const [extensionHours, setExtensionHours] = useState(0);
+  const [extensionAdminFee, setExtensionAdminFee] = useState(0);
+  const [extensionDiscount, setExtensionDiscount] = useState(0);
+  const [extensionTaxRate, setExtensionTaxRate] = useState(0);
+
 
   // States for Communications & Docs
   const [communicateMode, setCommunicateMode] = useState<CommunicateMode>('approval');
