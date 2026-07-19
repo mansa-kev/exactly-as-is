@@ -75,17 +75,32 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
         });
       }
 
-      const { dateOnly, iso } = addDaysToEndDate(booking.end_date, daysExtended);
+      // Anchor the extension to the current end_date; don't jump to end-of-day.
+      const currentEnd = new Date(booking.end_date);
+      if (Number.isNaN(currentEnd.getTime())) {
+        return res.status(400).json({ success: false, error: 'Booking end_date is invalid.' });
+      }
+      const newEnd = new Date(currentEnd.getTime() + daysExtended * 24 * 60 * 60 * 1000);
+      const iso = newEnd.toISOString();
+      const dateOnly = iso.slice(0, 10);
       const newTotal = Number(booking.total_amount || 0) + extensionCost;
 
+      // Record the extension in awaiting_payment — do NOT auto-mark as paid.
       const { data: extension, error: extError } = await supabase
         .from('booking_extensions')
         .insert({
           booking_id: bookingId,
           days_extended: daysExtended,
           new_end_date: iso,
+          original_end_date: booking.end_date,
           extension_cost: extensionCost,
-          status: 'pending_payment',
+          total_amount: extensionCost,
+          base_amount: extensionCost,
+          requester_role: 'admin',
+          requested_by: authData.user.id,
+          status: extensionCost > 0 ? 'awaiting_payment' : 'applied',
+          payment_status: extensionCost > 0 ? 'unpaid' : 'paid',
+          applied_at: extensionCost > 0 ? null : new Date().toISOString(),
         })
         .select()
         .single();
@@ -94,13 +109,17 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
         return res.status(500).json({ success: false, error: extError.message });
       }
 
+      // Only push new end_date + total when the extension is free / already paid.
+      // Otherwise wait for payment confirmation to move the goalposts.
+      const bookingUpdate: Record<string, any> = { sub_status: 'extended' };
+      if (extensionCost <= 0) {
+        bookingUpdate.end_date = dateOnly;
+        bookingUpdate.total_amount = newTotal;
+      }
+
       const { data: updated, error: updateError } = await supabase
         .from('bookings')
-        .update({
-          end_date: dateOnly,
-          sub_status: 'extended',
-          total_amount: newTotal,
-        })
+        .update(bookingUpdate)
         .eq('id', bookingId)
         .select()
         .single();
@@ -112,6 +131,7 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
           error: updateError?.message || 'Extension recorded but booking could not be updated.',
         });
       }
+
 
       return res.json({ success: true, extension, booking: updated });
     } catch (err: any) {

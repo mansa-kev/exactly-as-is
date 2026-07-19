@@ -559,7 +559,9 @@ export function AdminBookingCommandCenter() {
     : 1;
 
   const totalCost = Number(booking.total_amount) || 0;
-  const balance = isPaid ? 0 : totalCost;
+  const amountPaid = Number((booking as any).amount_paid) || (isPaid ? totalCost : 0);
+  const balance = Math.max(0, totalCost - amountPaid);
+
 
   const inspections = booking.booking_inspections || [];
   const preInspection = inspections.find((i: any) => i.type === 'pre_handover');
