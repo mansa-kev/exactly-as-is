@@ -71,11 +71,11 @@ CREATE TABLE IF NOT EXISTS public.analytics_daily (
 CREATE TABLE IF NOT EXISTS public.analytics_geo_daily (
   day     DATE NOT NULL,
   country TEXT NOT NULL,
-  region  TEXT,
-  city    TEXT,
+  region  TEXT NOT NULL DEFAULT '',
+  city    TEXT NOT NULL DEFAULT '',
   visits  INTEGER NOT NULL DEFAULT 0,
   visitors INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (day, country, COALESCE(region, ''), COALESCE(city, ''))
+  PRIMARY KEY (day, country, region, city)
 );
 
 CREATE TABLE IF NOT EXISTS public.analytics_vehicle_daily (
@@ -101,8 +101,8 @@ ALTER TABLE public.analytics_geo_daily     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_vehicle_daily ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_funnel_daily  ENABLE ROW LEVEL SECURITY;
 
-DO $$ BEGIN
-  FOR t IN SELECT unnest(ARRAY['analytics_daily','analytics_geo_daily','analytics_vehicle_daily','analytics_funnel_daily']) LOOP
+DO $$ DECLARE t TEXT; BEGIN
+  FOREACH t IN ARRAY ARRAY['analytics_daily','analytics_geo_daily','analytics_vehicle_daily','analytics_funnel_daily'] LOOP
     EXECUTE format('DROP POLICY IF EXISTS "%s_admin_select" ON public.%s', t, t);
     EXECUTE format($p$CREATE POLICY "%s_admin_select" ON public.%s FOR SELECT TO authenticated
       USING (EXISTS (SELECT 1 FROM public.user_profiles WHERE id = auth.uid() AND role = 'admin'))$p$, t, t);
