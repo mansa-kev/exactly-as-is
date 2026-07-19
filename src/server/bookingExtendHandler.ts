@@ -45,14 +45,20 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
       }
 
       const daysExtended = Number(req.body?.days_extended);
+      const hoursExtended = Number(req.body?.hours_extended) || 0;
       const extensionCost = Number(req.body?.extension_cost);
+      const pricingBreakdown = req.body?.pricing_breakdown ?? {};
 
-      if (!Number.isFinite(daysExtended) || daysExtended < 1) {
-        return res.status(400).json({ success: false, error: 'days_extended must be at least 1.' });
+      if (!Number.isFinite(daysExtended) || daysExtended < 0) {
+        return res.status(400).json({ success: false, error: 'days_extended must be zero or greater.' });
+      }
+      if ((daysExtended + hoursExtended) <= 0) {
+        return res.status(400).json({ success: false, error: 'Extension must be at least 1 hour.' });
       }
       if (!Number.isFinite(extensionCost) || extensionCost < 0) {
         return res.status(400).json({ success: false, error: 'extension_cost must be zero or greater.' });
       }
+
 
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
@@ -80,7 +86,8 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
       if (Number.isNaN(currentEnd.getTime())) {
         return res.status(400).json({ success: false, error: 'Booking end_date is invalid.' });
       }
-      const newEnd = new Date(currentEnd.getTime() + daysExtended * 24 * 60 * 60 * 1000);
+      const totalMs = (daysExtended * 24 + hoursExtended) * 60 * 60 * 1000;
+      const newEnd = new Date(currentEnd.getTime() + totalMs);
       const iso = newEnd.toISOString();
       const dateOnly = iso.slice(0, 10);
       const newTotal = Number(booking.total_amount || 0) + extensionCost;
@@ -91,11 +98,16 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
         .insert({
           booking_id: bookingId,
           days_extended: daysExtended,
+          hours_extended: hoursExtended,
           new_end_date: iso,
           original_end_date: booking.end_date,
           extension_cost: extensionCost,
           total_amount: extensionCost,
-          base_amount: extensionCost,
+          base_amount: Number(pricingBreakdown?.base) || extensionCost,
+          tax_amount: Number(pricingBreakdown?.tax) || 0,
+          fee_amount: Number(pricingBreakdown?.admin_fee) || 0,
+          discount_amount: Number(pricingBreakdown?.discount) || 0,
+          pricing_breakdown: pricingBreakdown,
           requester_role: 'admin',
           requested_by: authData.user.id,
           status: extensionCost > 0 ? 'awaiting_payment' : 'applied',
@@ -107,6 +119,7 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
 
       if (extError) {
         return res.status(500).json({ success: false, error: extError.message });
+
       }
 
       // Only push new end_date + total when the extension is free / already paid.
