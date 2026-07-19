@@ -114,16 +114,14 @@ const BookingCard: React.FC<{
   const totalPaid = booking.payment_status === 'paid' ? booking.total_amount : 0;
   const balance = booking.total_amount - totalPaid;
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const endDate = new Date(booking.end_date);
-  endDate.setHours(23, 59, 59, 999);
-
-  // Real-time Countdown logic calculated from a single parent clock
-  const timeLeftMs = endDate.getTime() - now;
   const pickupAt = booking.pickup_confirmed_at ? new Date(booking.pickup_confirmed_at) : null;
+  // Countdown target: pickup_confirmed_at + rentalDays*24h (falls back to end_date pre-pickup).
+  const deadline = getReturnDeadline(booking);
+  const timeLeftMs = deadline ? deadline.getTime() - now : 0;
   const elapsedSincePickupMs = pickupAt ? Math.max(0, now - pickupAt.getTime()) : null;
-  const isOverdue = booking.status === 'on_trip' && timeLeftMs <= 0;
-  const isLessThanAnHour = booking.status === 'on_trip' && timeLeftMs > 0 && timeLeftMs <= 3600000;
-  const isApproaching = booking.status === 'on_trip' && timeLeftMs > 3600000 && timeLeftMs <= 10800000; // < 3 hours
+  const isOverdue = booking.status === 'on_trip' && !!pickupAt && timeLeftMs <= 0;
+  const isLessThanAnHour = booking.status === 'on_trip' && !!pickupAt && timeLeftMs > 0 && timeLeftMs <= 3600000;
+  const isApproaching = booking.status === 'on_trip' && !!pickupAt && timeLeftMs > 3600000 && timeLeftMs <= 10800000; // < 3 hours
 
   return (
     <div className={`bg-card rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:border-primary/30 group ${
