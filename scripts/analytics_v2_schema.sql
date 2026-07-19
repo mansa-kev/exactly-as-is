@@ -71,11 +71,11 @@ CREATE TABLE IF NOT EXISTS public.analytics_daily (
 CREATE TABLE IF NOT EXISTS public.analytics_geo_daily (
   day     DATE NOT NULL,
   country TEXT NOT NULL,
-  region  TEXT,
-  city    TEXT,
+  region  TEXT NOT NULL DEFAULT '',
+  city    TEXT NOT NULL DEFAULT '',
   visits  INTEGER NOT NULL DEFAULT 0,
   visitors INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (day, country, COALESCE(region, ''), COALESCE(city, ''))
+  PRIMARY KEY (day, country, region, city)
 );
 
 CREATE TABLE IF NOT EXISTS public.analytics_vehicle_daily (
