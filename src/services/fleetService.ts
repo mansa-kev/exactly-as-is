@@ -638,6 +638,135 @@ export const fleetService = {
     return data;
   },
 
+  // --- Fleet Reports (Utilization Board, Idle Cars, Monthly P&L) ---
+  getFleetReport: async (fleetOwnerId: string, days: number = 90) => {
+    try {
+      const sinceISO = new Date(Date.now() - days * 86400000).toISOString();
+
+      const [carsRes, bookingsRes, expensesRes, payoutsRes] = await Promise.all([
+        supabase
+          .from('cars')
+          .select('id, make, model, license_plate, status, daily_rate')
+          .eq('fleet_owner_id', fleetOwnerId),
+        supabase
+          .from('bookings')
+          .select('id, car_id, start_date, end_date, total_amount, status, payment_status, created_at')
+          .eq('fleet_owner_id', fleetOwnerId)
+          .gte('created_at', sinceISO),
+        supabase
+          .from('expenses')
+          .select('id, car_id, amount, type, category, created_at')
+          .eq('user_id', fleetOwnerId)
+          .gte('created_at', sinceISO)
+          .then(r => r.data ? r : { data: [], error: null }),
+        supabase
+          .from('payouts')
+          .select('amount, status, created_at')
+          .eq('fleet_owner_id', fleetOwnerId)
+          .gte('created_at', sinceISO)
+          .then(r => r.data ? r : { data: [], error: null }),
+      ]);
+
+      const cars = carsRes.data || [];
+      const bookings = bookingsRes.data || [];
+      const expenses = expensesRes.data || [];
+      const payouts = payoutsRes.data || [];
+
+      const paidBookings = bookings.filter(
+        (b: any) => PAID_REVENUE_STATUSES_DB.includes(b.status) && b.payment_status === 'paid',
+      );
+
+      // Per-car utilization + revenue
+      const perCar = cars.map((car: any) => {
+        const cb = paidBookings.filter((b: any) => b.car_id === car.id);
+        let bookedDays = 0;
+        cb.forEach((b: any) => {
+          bookedDays += Math.max(
+            1,
+            Math.ceil((new Date(b.end_date).getTime() - new Date(b.start_date).getTime()) / 86400000),
+          );
+        });
+        const revenue = cb.reduce((s: number, b: any) => s + Number(b.total_amount || 0), 0);
+        const carExpenses = expenses
+          .filter((e: any) => e.car_id === car.id)
+          .reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+        const utilization = Math.min(Math.round((bookedDays / Math.max(days, 1)) * 100), 100);
+        const lastBooking = cb.sort(
+          (a: any, b: any) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime(),
+        )[0];
+        return {
+          id: car.id,
+          label: `${car.make} ${car.model}`,
+          license_plate: car.license_plate,
+          status: car.status,
+          trips: cb.length,
+          bookedDays,
+          utilization,
+          revenue,
+          expenses: carExpenses,
+          net: revenue - carExpenses,
+          lastBookedAt: lastBooking?.end_date || null,
+        };
+      });
+
+      // Idle cars = zero paid bookings in the window
+      const idleCars = perCar.filter((c) => c.trips === 0);
+
+      // Monthly P&L
+      const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const monthly: Record<string, { month: string; revenue: number; expenses: number; payouts: number }> = {};
+      const seedMonths = Math.min(12, Math.ceil(days / 30));
+      for (let i = seedMonths - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        d.setDate(1);
+        const k = monthKey(d);
+        monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0 };
+      }
+      paidBookings.forEach((b: any) => {
+        const k = monthKey(new Date(b.start_date));
+        if (!monthly[k]) monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0 };
+        monthly[k].revenue += Number(b.total_amount || 0);
+      });
+      expenses.forEach((e: any) => {
+        const k = monthKey(new Date(e.created_at));
+        if (!monthly[k]) monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0 };
+        monthly[k].expenses += Number(e.amount || 0);
+      });
+      payouts
+        .filter((p: any) => p.status === 'processed')
+        .forEach((p: any) => {
+          const k = monthKey(new Date(p.created_at));
+          if (!monthly[k]) monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0 };
+          monthly[k].payouts += Number(p.amount || 0);
+        });
+      const monthlyPnl = Object.values(monthly).sort((a, b) => a.month.localeCompare(b.month));
+
+      const totalRevenue = perCar.reduce((s, c) => s + c.revenue, 0);
+      const totalExpenses = perCar.reduce((s, c) => s + c.expenses, 0);
+      const avgUtilization = perCar.length > 0
+        ? Math.round(perCar.reduce((s, c) => s + c.utilization, 0) / perCar.length)
+        : 0;
+
+      return {
+        rangeDays: days,
+        totals: {
+          cars: cars.length,
+          idleCount: idleCars.length,
+          revenue: totalRevenue,
+          expenses: totalExpenses,
+          netProfit: totalRevenue - totalExpenses,
+          avgUtilization,
+        },
+        perCar: perCar.sort((a, b) => b.revenue - a.revenue),
+        idleCars,
+        monthlyPnl,
+      };
+    } catch (error) {
+      return handleSupabaseError(error, 'getFleetReport');
+    }
+  },
+
   addExpense: async (expense: any) => {
     const { data, error } = await supabase
       .from('expenses')
