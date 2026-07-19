@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { logger } from '../../utils/logger';
 import { getBookingVehicleDisplay } from '../../utils/bookingVehicleDisplay';
 import { bookingFromReservation } from '../../utils/bookingSource';
+import { getReturnDeadline } from '../../utils/rentalDeadline';
 
 // No longer using separate countdown hooks per card to prevent performance bottlenecks.
 // Real-time updates are driven by a single parent clock in the main component.
