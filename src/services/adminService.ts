@@ -1605,6 +1605,104 @@ export const adminService = {
     }
   },
 
+  // --- Finance Extras: P&L, Receivables Aging, Tax Summary ---
+  getFinanceExtras: async (rangeDays: number = 90) => {
+    try {
+      const sinceISO = new Date(Date.now() - rangeDays * 86400000).toISOString();
+      const VAT_RATE = 0.16;
+
+      const [bookingsRes, expensesRes, payoutsRes] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('id, total_amount, amount_paid, payment_status, status, start_date, end_date, created_at, user_id')
+          .gte('created_at', sinceISO),
+        supabase.from('expenses').select('amount, category, created_at').gte('created_at', sinceISO),
+        supabase.from('payouts').select('amount, status, created_at').gte('created_at', sinceISO),
+      ]);
+
+      const bookings = bookingsRes.data || [];
+      const expenses = expensesRes.data || [];
+      const payouts = payoutsRes.data || [];
+
+      // Monthly P&L
+      const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const monthly: Record<string, any> = {};
+      const seedMonths = Math.min(12, Math.ceil(rangeDays / 30));
+      for (let i = seedMonths - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        d.setDate(1);
+        monthly[monthKey(d)] = { month: monthKey(d), revenue: 0, expenses: 0, payouts: 0, netProfit: 0 };
+      }
+      bookings
+        .filter((b: any) => b.payment_status === 'paid')
+        .forEach((b: any) => {
+          const k = monthKey(new Date(b.start_date || b.created_at));
+          if (!monthly[k]) monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0, netProfit: 0 };
+          monthly[k].revenue += Number(b.total_amount || 0);
+        });
+      expenses.forEach((e: any) => {
+        const k = monthKey(new Date(e.created_at));
+        if (!monthly[k]) monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0, netProfit: 0 };
+        monthly[k].expenses += Number(e.amount || 0);
+      });
+      payouts
+        .filter((p: any) => p.status === 'processed')
+        .forEach((p: any) => {
+          const k = monthKey(new Date(p.created_at));
+          if (!monthly[k]) monthly[k] = { month: k, revenue: 0, expenses: 0, payouts: 0, netProfit: 0 };
+          monthly[k].payouts += Number(p.amount || 0);
+        });
+      Object.values(monthly).forEach((m: any) => (m.netProfit = m.revenue - m.expenses));
+      const pnl = Object.values(monthly).sort((a: any, b: any) => a.month.localeCompare(b.month));
+
+      // Receivables aging: bookings with balance owed
+      const now = Date.now();
+      const buckets = { current: 0, d30: 0, d60: 0, d90: 0, over90: 0 };
+      const receivables: any[] = [];
+      bookings.forEach((b: any) => {
+        const owed = Number(b.total_amount || 0) - Number(b.amount_paid || 0);
+        if (owed <= 0) return;
+        if (b.status === 'cancelled') return;
+        const age = Math.floor((now - new Date(b.created_at).getTime()) / 86400000);
+        let bucket: keyof typeof buckets = 'current';
+        if (age > 90) bucket = 'over90';
+        else if (age > 60) bucket = 'd90';
+        else if (age > 30) bucket = 'd60';
+        else if (age > 0) bucket = 'd30';
+        buckets[bucket] += owed;
+        receivables.push({ id: b.id, owed, ageDays: age, bucket, status: b.status });
+      });
+
+      // Tax summary (revenue is VAT-inclusive; extract embedded VAT)
+      const grossRevenue = bookings
+        .filter((b: any) => b.payment_status === 'paid')
+        .reduce((s: number, b: any) => s + Number(b.total_amount || 0), 0);
+      const vatCollected = grossRevenue - grossRevenue / (1 + VAT_RATE);
+      const netOfVat = grossRevenue - vatCollected;
+
+      return {
+        rangeDays,
+        pnl,
+        receivables: {
+          buckets,
+          total: Object.values(buckets).reduce((s, v) => s + v, 0),
+          count: receivables.length,
+          items: receivables.sort((a, b) => b.ageDays - a.ageDays).slice(0, 50),
+        },
+        tax: {
+          rate: VAT_RATE,
+          grossRevenue,
+          vatCollected,
+          netOfVat,
+        },
+      };
+    } catch (error) {
+      logger.error('getFinanceExtras error:', error);
+      return handleSupabaseErrorWrapper(error, 'getFinanceExtras');
+    }
+  },
+
   // --- Payouts ---
   getPayouts: async () => {
     // First get all payout transactions
