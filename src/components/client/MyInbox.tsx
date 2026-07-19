@@ -395,23 +395,43 @@ export function MyInbox() {
             <h3 className="text-lg font-semibold mb-6">Request History</h3>
             <div className="space-y-4">
               {extensionRequests.length > 0 ? (
-                extensionRequests.map(req => (
+                extensionRequests.map(req => {
+                  const isAwaiting = req.status === 'awaiting_payment' && req.payment_status !== 'paid';
+                  const outstanding = Math.max(Number(req.total_amount || 0) - Number(req.amount_paid || 0), 0);
+                  return (
                   <div key={req.id} className="p-4 border border-border rounded-xl">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-bold text-sm">{req.bookings.cars.make} {req.bookings.cars.model}</p>
-                        <p className="text-xs text-muted-foreground">Requested until: {new Date(req.new_end_date).toLocaleDateString()}</p>
+                        <p className="font-bold text-sm">{req.bookings?.cars?.make} {req.bookings?.cars?.model}</p>
+                        <p className="text-xs text-muted-foreground">New return: {new Date(req.new_end_date).toLocaleString()}</p>
                       </div>
                       <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-lg ${
-                        req.status === 'approved' ? 'bg-green-100 text-green-600' : 
-                        req.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
+                        req.status === 'applied' || req.payment_status === 'paid' ? 'bg-green-100 text-green-600' :
+                        req.status === 'rejected' || req.status === 'cancelled' ? 'bg-red-100 text-red-600' :
+                        isAwaiting ? 'bg-orange-100 text-orange-600' :
+                        'bg-yellow-100 text-yellow-600'
                       }`}>
-                        {req.status}
+                        {isAwaiting ? 'Awaiting Payment' : req.status}
                       </span>
                     </div>
                     {req.reason && <p className="text-xs text-muted-foreground italic mt-2">"{req.reason}"</p>}
+                    {isAwaiting && outstanding > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase text-muted-foreground">Amount Due</p>
+                          <p className="text-lg font-black text-primary">KES {outstanding.toLocaleString()}</p>
+                        </div>
+                        <PayExtensionButton
+                          extensionId={req.id}
+                          phone={user?.phone || currentUser?.phone || ''}
+                          onPaid={() => window.location.reload()}
+                        />
+                      </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
+
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Clock size={32} className="mx-auto mb-2 opacity-20" />
