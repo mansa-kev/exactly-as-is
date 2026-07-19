@@ -36,6 +36,7 @@ const importDamageReports = () => import('./DamageReports');
 const importFinancialCenter = () => import('./FinancialCenter');
 const importFleetSettings = () => import('./FleetSettings');
 const importFleetConciergeBooking = () => import('./FleetConciergeBooking');
+const importFleetReports = () => import('./FleetReports');
 
 const FleetDashboard = React.lazy(() => importFleetDashboard().then(m => ({ default: m.FleetDashboard })));
 const MyCars = React.lazy(() => importMyCars().then(m => ({ default: m.MyCars })));
