@@ -1719,6 +1719,388 @@ const app = express();
     }
   });
 
+  // ============================================================
+  // Extension payments (NCBA STK Push + cash mark-paid)
+  // ============================================================
+  const applyPaidExtension = async (extension: any, opts: { method: string; reference?: string | null; paidBy?: string | null }) => {
+    const now = new Date().toISOString();
+
+    // Mark the extension itself as paid + applied
+    await supabase
+      .from('booking_extensions')
+      .update({
+        status: 'applied',
+        payment_status: 'paid',
+        amount_paid: extension.total_amount,
+        payment_method: opts.method,
+        payment_reference: opts.reference || null,
+        paid_at: now,
+        paid_by: opts.paidBy || null,
+        applied_at: now,
+      })
+      .eq('id', extension.id);
+
+    // Push the booking's end_date, top up total_amount + amount_paid
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id, end_date, total_amount, amount_paid, client_id')
+      .eq('id', extension.booking_id)
+      .single();
+
+    if (booking) {
+      const newTotal = Number(booking.total_amount || 0) + Number(extension.total_amount || 0);
+      const newAmountPaid = Number((booking as any).amount_paid || 0) + Number(extension.total_amount || 0);
+      const newEndIso = extension.new_end_date;
+      const newEndDateOnly = String(newEndIso).slice(0, 10);
+
+      await supabase
+        .from('bookings')
+        .update({
+          end_date: newEndDateOnly,
+          total_amount: newTotal,
+          amount_paid: newAmountPaid,
+          last_payment_at: now,
+          last_payment_method: opts.method,
+          last_payment_reference: opts.reference || null,
+          sub_status: 'extended',
+        } as any)
+        .eq('id', booking.id);
+
+      if (booking.client_id) {
+        await supabase.from('notifications').insert({
+          user_id: booking.client_id,
+          title: 'Extension Confirmed',
+          content: `Your booking extension of KES ${Number(extension.total_amount).toLocaleString()} has been paid. New return: ${new Date(newEndIso).toLocaleString()}.`,
+          type: 'success',
+          is_read: false,
+          link: `/bookings/${booking.id}`,
+        }).then(() => {}, (err: any) => console.error('[ext-pay] notif error:', err));
+      }
+    }
+  };
+
+  const finalizeExtensionNcbaPayment = async (paymentRequest: any, queryResult: any) => {
+    const now = new Date().toISOString();
+
+    if (queryResult.paid) {
+      await supabase
+        .from('payment_requests')
+        .update({
+          status: 'success',
+          status_description: queryResult.description || 'Success',
+          raw_query_response: queryResult.raw || null,
+          updated_at: now,
+          confirmed_at: now,
+        })
+        .eq('id', paymentRequest.id);
+
+      const { data: extension } = await supabase
+        .from('booking_extensions')
+        .select('*')
+        .eq('id', paymentRequest.booking_extension_id)
+        .single();
+
+      if (extension && extension.status !== 'applied') {
+        await applyPaidExtension(extension, {
+          method: 'ncba_stk',
+          reference: paymentRequest.provider_transaction_id || paymentRequest.provider_reference_id || null,
+          paidBy: paymentRequest.client_id || null,
+        });
+
+        // Ledger transaction
+        const { data: existingTx } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('booking_id', extension.booking_id)
+          .eq('transaction_code', paymentRequest.provider_transaction_id)
+          .maybeSingle();
+
+        if (!existingTx) {
+          await supabase.from('transactions').insert({
+            booking_id: extension.booking_id,
+            user_id: paymentRequest.client_id,
+            amount: paymentRequest.amount,
+            type: 'payment_in',
+            status: 'completed',
+            transaction_code: paymentRequest.provider_transaction_id,
+          });
+        }
+      }
+    } else if (queryResult.failed) {
+      await supabase
+        .from('payment_requests')
+        .update({
+          status: 'failed',
+          status_description: queryResult.description || 'Payment failed',
+          raw_query_response: queryResult.raw || null,
+          updated_at: now,
+          failed_at: now,
+        })
+        .eq('id', paymentRequest.id);
+    } else {
+      await supabase
+        .from('payment_requests')
+        .update({
+          status: 'pending',
+          status_description: queryResult.description || 'Payment pending',
+          raw_query_response: queryResult.raw || null,
+          updated_at: now,
+        })
+        .eq('id', paymentRequest.id);
+    }
+  };
+
+  app.post('/api/ncba/extensions/stk-push', async (req, res) => {
+    try {
+      const { phone, extensionId } = req.body;
+      if (!phone || !extensionId) {
+        return res.status(400).json({ success: false, error: 'Missing required fields: phone, extensionId' });
+      }
+
+      const { data: extension, error: extError } = await supabase
+        .from('booking_extensions')
+        .select('*')
+        .eq('id', extensionId)
+        .single();
+
+      if (extError || !extension) {
+        return res.status(404).json({ success: false, error: 'Extension not found' });
+      }
+
+      if (extension.payment_status === 'paid' || extension.status === 'applied') {
+        return res.status(409).json({ success: false, error: 'This extension is already paid' });
+      }
+
+      const outstanding = Number(extension.total_amount || 0) - Number(extension.amount_paid || 0);
+      if (outstanding <= 0) {
+        return res.status(409).json({ success: false, error: 'No outstanding balance on this extension' });
+      }
+
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('client_id')
+        .eq('id', extension.booking_id)
+        .single();
+
+      const publicConfig = ncbaService.getPublicConfig();
+      const accountNo = getNcbaAccountNo();
+      if (!accountNo) {
+        return res.status(500).json({ success: false, error: 'NCBA account number is not configured' });
+      }
+
+      const result = await ncbaService.initiateSTKPush({ phone, amount: outstanding, accountNo });
+
+      const now = new Date().toISOString();
+      const { data: paymentRequest, error: prError } = await supabase
+        .from('payment_requests')
+        .insert({
+          booking_id: extension.booking_id,
+          booking_extension_id: extension.id,
+          client_id: booking?.client_id || null,
+          provider: 'ncba',
+          channel: 'stk',
+          phone: ncbaService.formatPhone(phone),
+          amount: outstanding,
+          currency: 'KES',
+          paybill_no: publicConfig.paybillNo,
+          account_no: accountNo,
+          network: publicConfig.network,
+          transaction_type: publicConfig.transactionType,
+          provider_transaction_id: result.transactionId || null,
+          provider_reference_id: result.referenceId || null,
+          status: result.success ? 'pending' : 'failed',
+          status_code: result.statusCode || null,
+          status_description: result.statusDescription || result.error || null,
+          raw_initiate_response: result.raw || null,
+          updated_at: now,
+          failed_at: result.success ? null : now,
+        })
+        .select()
+        .single();
+
+      if (prError) {
+        return res.status(500).json({ success: false, error: prError.message });
+      }
+
+      await supabase
+        .from('booking_extensions')
+        .update({ status: 'awaiting_payment', payment_status: 'unpaid' })
+        .eq('id', extension.id);
+
+      return res.json({
+        success: result.success,
+        paymentRequestId: paymentRequest.id,
+        transactionId: result.transactionId,
+        referenceId: result.referenceId,
+        statusCode: result.statusCode,
+        statusDescription: result.statusDescription,
+        error: result.error,
+      });
+    } catch (error: any) {
+      console.error('[API] NCBA Extension STK error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+    }
+  });
+
+  app.post('/api/ncba/extensions/query', async (req, res) => {
+    try {
+      const { paymentRequestId } = req.body;
+      if (!paymentRequestId) {
+        return res.status(400).json({ success: false, error: 'Missing paymentRequestId' });
+      }
+
+      const { data: paymentRequest, error } = await supabase
+        .from('payment_requests')
+        .select('*')
+        .eq('id', paymentRequestId)
+        .single();
+
+      if (error || !paymentRequest) {
+        return res.status(404).json({ success: false, error: 'Payment request not found' });
+      }
+
+      if (!paymentRequest.provider_transaction_id) {
+        return res.json({ success: true, paid: false, failed: false, pending: true, status: 'PENDING' });
+      }
+
+      if (paymentRequest.status === 'success') {
+        return res.json({ success: true, paid: true, failed: false, pending: false, status: 'SUCCESS' });
+      }
+
+      const result = await ncbaService.querySTKPush(paymentRequest.provider_transaction_id);
+      await finalizeExtensionNcbaPayment(paymentRequest, result);
+
+      return res.json({
+        success: result.success,
+        paid: result.paid,
+        failed: result.failed,
+        pending: result.pending,
+        status: result.status,
+        description: result.description,
+        error: result.error,
+      });
+    } catch (error: any) {
+      console.error('[API] NCBA Extension Query error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+    }
+  });
+
+  app.get('/api/ncba/extensions/payment-status/:extensionId', async (req, res) => {
+    try {
+      const { extensionId } = req.params;
+
+      const { data: extension, error } = await supabase
+        .from('booking_extensions')
+        .select('*')
+        .eq('id', extensionId)
+        .single();
+
+      if (error || !extension) {
+        return res.status(404).json({ success: false, error: 'Extension not found' });
+      }
+
+      const { data: paymentRequest } = await supabase
+        .from('payment_requests')
+        .select('*')
+        .eq('booking_extension_id', extensionId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Opportunistic reconciliation
+      let currentExt = extension;
+      if (paymentRequest?.provider_transaction_id && paymentRequest.status !== 'success' && currentExt.payment_status !== 'paid') {
+        const ageMs = Date.now() - new Date(paymentRequest.created_at).getTime();
+        if (ageMs >= 15000) {
+          const result = await ncbaService.querySTKPush(paymentRequest.provider_transaction_id);
+          await finalizeExtensionNcbaPayment(paymentRequest, result);
+          const { data: refreshed } = await supabase
+            .from('booking_extensions')
+            .select('*')
+            .eq('id', extensionId)
+            .single();
+          if (refreshed) currentExt = refreshed;
+        }
+      }
+
+      return res.json({
+        success: true,
+        extensionId: currentExt.id,
+        status: currentExt.status,
+        paymentStatus: currentExt.payment_status,
+        paid: currentExt.payment_status === 'paid',
+        applied: currentExt.status === 'applied',
+        paymentRequest,
+      });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Admin/driver: mark an extension as paid in cash (or waived)
+  app.post('/api/bookings/:bookingId/extensions/:extensionId/mark-paid-cash', async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: 'Authorization required' });
+      }
+      const token = authHeader.slice(7);
+      const { data: authData, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !authData.user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const { bookingId, extensionId } = req.params;
+      const { reference, method } = req.body || {};
+
+      const allowed = await canManageLifecycle(supabase, authData.user.id, bookingId);
+      if (!allowed) {
+        return res.status(403).json({ success: false, error: 'Not allowed' });
+      }
+
+      const { data: extension, error: extError } = await supabase
+        .from('booking_extensions')
+        .select('*')
+        .eq('id', extensionId)
+        .eq('booking_id', bookingId)
+        .single();
+
+      if (extError || !extension) {
+        return res.status(404).json({ success: false, error: 'Extension not found' });
+      }
+
+      if (extension.payment_status === 'paid' || extension.status === 'applied') {
+        return res.status(409).json({ success: false, error: 'Extension already settled' });
+      }
+
+      const settleMethod = (method === 'waived') ? 'waived' : 'cash';
+      await applyPaidExtension(extension, {
+        method: settleMethod,
+        reference: reference || null,
+        paidBy: authData.user.id,
+      });
+
+      // Ledger row (skip for waived)
+      if (settleMethod === 'cash') {
+        await supabase.from('transactions').insert({
+          booking_id: extension.booking_id,
+          user_id: authData.user.id,
+          amount: extension.total_amount,
+          type: 'payment_in',
+          status: 'completed',
+          transaction_code: reference || `CASH-EXT-${extension.id.slice(0, 8)}`,
+        });
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('[API] Extension cash mark-paid error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+    }
+  });
+
+
+
   app.post(
     '/api/reservations/:reservationId/prepare-continuation',
     createPrepareContinuationHandler(supabase)
