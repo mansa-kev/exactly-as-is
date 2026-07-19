@@ -260,6 +260,9 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
 
   return (
     <div className="bg-card border border-border rounded-2xl p-6 md:p-8 animate-in slide-in-from-right-4 duration-300">
+      {cameraTarget && (
+        <CameraCapture onCapture={handleCameraCapture} onClose={() => setCameraTarget(null)} />
+      )}
       {/* Header */}
       <div className="border-b border-border pb-4 mb-6 flex justify-between items-center">
         <div>
