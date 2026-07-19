@@ -2369,3 +2369,96 @@ export function AdminBookingCommandCenter() {
     </div>
   );
 }
+
+function ExtensionLedgerRow({ ext, bookingId, clientPhone, onChange }: { ext: any; bookingId: string; clientPhone: string; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [showStk, setShowStk] = useState(false);
+  const [showCash, setShowCash] = useState(false);
+  const [phone, setPhone] = useState(clientPhone || '');
+  const [cashRef, setCashRef] = useState('');
+
+  const isPaid = ext.status === 'applied' || ext.payment_status === 'paid';
+  const isAwaiting = ext.status === 'awaiting_payment' && !isPaid;
+  const outstanding = Math.max(Number(ext.total_amount || 0) - Number(ext.amount_paid || 0), 0);
+
+  const sendStk = async () => {
+    if (!phone) return toast.error('Enter client phone');
+    setBusy(true);
+    try {
+      const res = await extensionPaymentService.initiateSTKPush({ phone, extensionId: ext.id });
+      if (!res.success || !res.paymentRequestId) {
+        toast.error(res.error || 'Failed to send STK');
+        return;
+      }
+      toast.info('STK sent — waiting for client to enter PIN…');
+      const outcome = await extensionPaymentService.pollUntilPaid(res.paymentRequestId, ext.id);
+      if (outcome === 'paid') { toast.success('Extension paid & applied'); onChange(); }
+      else if (outcome === 'failed') toast.error('Payment failed');
+      else toast.error('Payment timed out');
+    } finally { setBusy(false); setShowStk(false); }
+  };
+
+  const markCash = async () => {
+    setBusy(true);
+    try {
+      const res = await extensionPaymentService.markPaidCash({ bookingId, extensionId: ext.id, reference: cashRef, method: 'cash' });
+      if (!res.success) return toast.error(res.error || 'Failed to mark paid');
+      toast.success('Extension marked as paid (cash)');
+      onChange();
+    } finally { setBusy(false); setShowCash(false); }
+  };
+
+  return (
+    <div className="py-3 border-b border-border/50">
+      <div className="flex justify-between items-center">
+        <div>
+          <span className="text-sm font-bold text-purple-400">
+            Extension ({ext.days_extended}d{ext.hours_extended ? ` ${ext.hours_extended}h` : ''})
+          </span>
+          <p className="text-[10px] text-muted-foreground">New return: {new Date(ext.new_end_date).toLocaleString()}</p>
+        </div>
+        <div className="text-right">
+          <span className="text-base font-black text-purple-400">+ KES {Number(ext.total_amount || 0).toLocaleString()}</span>
+          <p className={`text-[10px] font-black uppercase mt-0.5 ${isPaid ? 'text-green-500' : isAwaiting ? 'text-orange-500' : 'text-muted-foreground'}`}>
+            {isPaid ? '✓ Paid' : isAwaiting ? 'Awaiting Payment' : ext.status}
+          </p>
+        </div>
+      </div>
+      {isAwaiting && outstanding > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {!showStk && !showCash && (
+            <>
+              <button onClick={() => setShowStk(true)} className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[11px] font-black flex items-center gap-1.5">
+                <CreditCard size={11} /> Send STK
+              </button>
+              <button onClick={() => setShowCash(true)} className="px-3 py-1.5 bg-muted text-foreground rounded-lg text-[11px] font-black">
+                Mark Paid (Cash)
+              </button>
+            </>
+          )}
+          {showStk && (
+            <div className="flex items-center gap-2 w-full">
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="07XXXXXXXX"
+                className="px-3 py-1.5 bg-muted rounded-lg text-xs flex-1 outline-none" />
+              <button onClick={sendStk} disabled={busy} className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[11px] font-black flex items-center gap-1 disabled:opacity-50">
+                {busy ? <Loader2 size={11} className="animate-spin" /> : 'Send'}
+              </button>
+              <button onClick={() => setShowStk(false)} disabled={busy} className="px-2 py-1.5 text-muted-foreground text-xs">Cancel</button>
+            </div>
+          )}
+          {showCash && (
+            <div className="flex items-center gap-2 w-full">
+              <input type="text" value={cashRef} onChange={e => setCashRef(e.target.value)} placeholder="Receipt / ref (optional)"
+                className="px-3 py-1.5 bg-muted rounded-lg text-xs flex-1 outline-none" />
+              <button onClick={markCash} disabled={busy} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-[11px] font-black flex items-center gap-1 disabled:opacity-50">
+                {busy ? <Loader2 size={11} className="animate-spin" /> : 'Confirm'}
+              </button>
+              <button onClick={() => setShowCash(false)} disabled={busy} className="px-2 py-1.5 text-muted-foreground text-xs">Cancel</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
