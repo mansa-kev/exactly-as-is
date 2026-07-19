@@ -36,6 +36,7 @@ const importDamageReports = () => import('./DamageReports');
 const importFinancialCenter = () => import('./FinancialCenter');
 const importFleetSettings = () => import('./FleetSettings');
 const importFleetConciergeBooking = () => import('./FleetConciergeBooking');
+const importFleetReports = () => import('./FleetReports');
 
 const FleetDashboard = React.lazy(() => importFleetDashboard().then(m => ({ default: m.FleetDashboard })));
 const MyCars = React.lazy(() => importMyCars().then(m => ({ default: m.MyCars })));
@@ -49,6 +50,7 @@ const DamageReports = React.lazy(() => importDamageReports().then(m => ({ defaul
 const FinancialCenter = React.lazy(() => importFinancialCenter().then(m => ({ default: m.FinancialCenter })));
 const FleetSettings = React.lazy(() => importFleetSettings().then(m => ({ default: m.FleetSettings })));
 const FleetConciergeBooking = React.lazy(() => importFleetConciergeBooking().then(m => ({ default: m.FleetConciergeBooking })));
+const FleetReports = React.lazy(() => importFleetReports().then(m => ({ default: m.FleetReports })));
 
 const FLEET_MODULE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   '/fleet': importFleetDashboard,
@@ -63,7 +65,10 @@ const FLEET_MODULE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   '/fleet/vault': importDigitalVault,
   '/fleet/growth': importGrowthAndInsights,
   '/fleet/settings': importFleetSettings,
+  '/fleet/reports': importFleetReports,
 };
+
+
 
 const scheduleIdle = (cb: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -94,6 +99,7 @@ const NAV_GROUPS: PortalNavGroup[] = [
     title: 'Financials',
     items: [
       { id: 'financials', label: 'Earnings & Payouts', path: '/fleet/financials', icon: DollarSign, shortLabel: 'Earnings' },
+      { id: 'reports', label: 'Fleet Reports', path: '/fleet/reports', icon: TrendingUp, shortLabel: 'Reports' },
       { id: 'expenses', label: 'Expense Tracker', path: '/fleet/expenses', icon: Receipt, shortLabel: 'Expenses' },
     ],
   },
@@ -251,6 +257,7 @@ export function FleetLayout() {
                 <Route path="maintenance" element={<MaintenanceLogs />} />
                 <Route path="damage" element={<DamageReports />} />
                 <Route path="financials" element={<FinancialCenter />} />
+                <Route path="reports" element={<FleetReports />} />
                 <Route path="expenses" element={<ExpenseTracker />} />
                 <Route path="inbox" element={<MyInbox />} />
                 <Route path="booking-requests" element={<BookingRequests />} />

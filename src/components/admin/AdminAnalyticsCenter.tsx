@@ -36,6 +36,26 @@ export function AdminAnalyticsCenter() {
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [refs, setRefs] = useState<RefRow[]>([]);
   const [pages, setPages] = useState<PageRow[]>([]);
+  const [liveUsers, setLiveUsers] = useState<number>(0);
+
+  // Realtime: distinct visitors in the last 5 minutes, polled every 30s
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      const since = new Date(Date.now() - 5 * 60_000).toISOString();
+      const { data } = await supabase
+        .from('analytics_events')
+        .select('visitor_id')
+        .gte('created_at', since)
+        .limit(2000);
+      if (cancelled) return;
+      const unique = new Set((data || []).map((r: any) => r.visitor_id).filter(Boolean));
+      setLiveUsers(unique.size);
+    };
+    poll();
+    const t = setInterval(poll, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -108,6 +128,14 @@ export function AdminAnalyticsCenter() {
             <p className="text-sm text-muted-foreground mt-1">Server-side ingestion · GeoIP · bot-filtered · pre-aggregated</p>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-semibold">{liveUsers}</span>
+              <span className="text-muted-foreground text-xs">live now</span>
+            </div>
             <div className="flex rounded-lg border border-border overflow-hidden bg-card">
               {([7, 30, 90] as Range[]).map(r => (
                 <button key={r} onClick={() => setRange(r)}

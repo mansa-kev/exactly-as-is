@@ -4,6 +4,7 @@ import { adminService } from '../../services/adminService';
 import { AdminPaymentApprovals } from './AdminPaymentApprovals';
 import { AdminPayoutEngine } from './AdminPayoutEngine';
 import { AdminPartnerLedger } from './AdminPartnerLedger';
+import { AdminFinanceExtras } from './AdminFinanceExtras';
 import { createEmptyPayoutBreakdown } from '../../utils/partnerFinancials';
 import { 
   DollarSign, 
@@ -60,7 +61,7 @@ export function AdminFinancials() {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const initialTab =
-    tabParam === 'approvals' || tabParam === 'payouts' || tabParam === 'partner-ledger'
+    tabParam === 'approvals' || tabParam === 'payouts' || tabParam === 'partner-ledger' || tabParam === 'pnl'
       ? tabParam
       : 'overview';
   const [data, setData] = useState({
@@ -80,7 +81,7 @@ export function AdminFinancials() {
   });
   const [reservationStats, setReservationStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'partner-ledger' | 'approvals' | 'payouts'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'partner-ledger' | 'approvals' | 'payouts' | 'pnl'>(initialTab);
   const [txTab, setTxTab] = useState<'all' | 'payment_in' | 'payout_out'>('all');
 
   const fetchFinancials = async () => {
@@ -147,6 +148,7 @@ export function AdminFinancials() {
       <div className="flex items-center gap-4 border-b border-border pb-4">
         {[
           { id: 'overview', label: 'Financial Overview' },
+          { id: 'pnl', label: 'P&L / Aging / Tax' },
           { id: 'partner-ledger', label: 'Partner Ledger' },
           { id: 'approvals', label: 'Payment Approvals' },
           { id: 'payouts', label: 'Payout Engine' },
@@ -167,6 +169,8 @@ export function AdminFinancials() {
 
       {activeTab === 'approvals' ? (
         <AdminPaymentApprovals />
+      ) : activeTab === 'pnl' ? (
+        <AdminFinanceExtras />
       ) : activeTab === 'payouts' ? (
         <AdminPayoutEngine />
       ) : activeTab === 'partner-ledger' ? (
