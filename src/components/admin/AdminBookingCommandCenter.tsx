@@ -74,6 +74,8 @@ export function AdminBookingCommandCenter() {
   const [adminMessage, setAdminMessage] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [outboxMessage, setOutboxMessage] = useState<string | null>(null);
+  const [sentChannels, setSentChannels] = useState<{ email?: string; whatsapp?: string; sms?: string }>({});
   const [isVerifying, setIsVerifying] = useState(false);
   const [regeneratingContract, setRegeneratingContract] = useState(false);
   const [isSyncingPayment, setIsSyncingPayment] = useState(false);
