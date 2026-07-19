@@ -343,23 +343,26 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
                   </button>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-border rounded-2xl h-48 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/10 transition-colors">
+                <div className="border-2 border-dashed border-border rounded-2xl h-48 flex flex-col items-center justify-center gap-3 hover:bg-muted/10 transition-colors">
                   {uploading === 'fuel' ? (
                     <Loader2 className="animate-spin text-primary" size={24} />
                   ) : (
                     <>
-                      <Camera className="text-muted-foreground" size={32} />
-                      <span className="text-xs font-bold text-muted-foreground">Take Dashboard Photo</span>
+                      <Camera className="text-primary" size={32} />
+                      <button
+                        type="button"
+                        onClick={() => setCameraTarget('fuel')}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2"
+                      >
+                        <Camera size={14} /> Live Capture
+                      </button>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase cursor-pointer hover:text-foreground">
+                        or upload file
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(e, 'fuel')} />
+                      </label>
                     </>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleUploadFile(e, 'fuel')}
-                  />
-                </label>
+                </div>
               )}
 
               {gpsCoords ? (
