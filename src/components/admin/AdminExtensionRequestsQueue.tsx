@@ -272,6 +272,17 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
         rejection_reason: rejectReason.trim(),
       }).eq('id', row.id);
       if (error) throw error;
+      const clientId = (row as any).bookings?.client_id;
+      if (clientId) {
+        await supabase.from('notifications').insert({
+          user_id: clientId,
+          title: 'Extension Request Declined',
+          content: `Your extension request was declined. Reason: ${rejectReason.trim()}`,
+          type: 'error',
+          is_read: false,
+          link: `/bookings/${row.booking_id}`,
+        }).then(() => {}, (e: any) => console.error('[ext-notif]', e));
+      }
       toast.success('Extension rejected');
       onChange();
     } catch (e: any) {
