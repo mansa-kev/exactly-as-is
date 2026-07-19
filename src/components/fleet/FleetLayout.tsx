@@ -99,6 +99,7 @@ const NAV_GROUPS: PortalNavGroup[] = [
     title: 'Financials',
     items: [
       { id: 'financials', label: 'Earnings & Payouts', path: '/fleet/financials', icon: DollarSign, shortLabel: 'Earnings' },
+      { id: 'reports', label: 'Fleet Reports', path: '/fleet/reports', icon: TrendingUp, shortLabel: 'Reports' },
       { id: 'expenses', label: 'Expense Tracker', path: '/fleet/expenses', icon: Receipt, shortLabel: 'Expenses' },
     ],
   },
