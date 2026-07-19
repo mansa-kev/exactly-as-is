@@ -211,7 +211,13 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
   const isAwaiting = row.status === 'awaiting_payment';
   const isPending = row.status === 'requested' || row.status === 'quoted';
 
+  const eligibility = checkExtensionEligibility(bk);
+
   const saveQuote = async (advanceToAwaiting: boolean) => {
+    if (advanceToAwaiting && !eligibility.eligible) {
+      toast.error(eligibility.reason || 'This booking can no longer be extended.');
+      return;
+    }
     setBusy(true);
     try {
       const { data: sess } = await supabase.auth.getSession();
