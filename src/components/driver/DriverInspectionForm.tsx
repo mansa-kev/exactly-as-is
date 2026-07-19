@@ -33,6 +33,7 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [cameraTarget, setCameraTarget] = useState<'fuel' | 'exterior' | 'interior' | null>(null);
 
   // Form State
   const [mileage, setMileage] = useState('');
