@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
+import { CarReportCard } from './CarReportCard';
 import { 
   Search, 
   Car, 
