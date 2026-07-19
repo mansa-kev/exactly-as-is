@@ -257,6 +257,7 @@ export function FleetLayout() {
                 <Route path="maintenance" element={<MaintenanceLogs />} />
                 <Route path="damage" element={<DamageReports />} />
                 <Route path="financials" element={<FinancialCenter />} />
+                <Route path="reports" element={<FleetReports />} />
                 <Route path="expenses" element={<ExpenseTracker />} />
                 <Route path="inbox" element={<MyInbox />} />
                 <Route path="booking-requests" element={<BookingRequests />} />
