@@ -60,12 +60,12 @@ export function PublicHome() {
   return (
     <>
       <Helmet>
-        <title>LinkedUp Cars Rentals | Car Hire, Chauffeur & Airport Transfers Nairobi</title>
-        <meta name="description" content="Book a car online in Nairobi — self-drive, chauffeur, staff transport, corporate bus hire, JKIA airport transfers, game drive hires and high profile transfers. Instant confirmation." />
+        <title>LinkedUp Cars Rentals | Car Hire Nairobi</title>
+        <meta name="description" content="Book a car in Nairobi — self-drive, chauffeur, JKIA transfers and corporate transport. Instant online confirmation." />
         <link rel="canonical" href="https://linkedupcarsrentals.com/" />
         <meta property="og:title" content="LinkedUp Cars Rentals | Car Hire Nairobi" />
         <meta property="og:url" content="https://linkedupcarsrentals.com/" />
-        <meta property="og:description" content="Nairobi's premier car hire — self-drive, chauffeur, JKIA transfers, staff transport and corporate buses. Book instantly online." />
+        <meta property="og:description" content="Book a car in Nairobi — self-drive, chauffeur, JKIA transfers and corporate transport. Instant online confirmation." />
       </Helmet>
       <div className="flex flex-col">
       <HeroSection />
