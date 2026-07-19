@@ -1376,12 +1376,22 @@ export function AdminBookingCommandCenter() {
                   <span className="text-sm font-bold text-muted-foreground">Base Rental Cost</span>
                   <span className="text-base font-black">KES {totalCost.toLocaleString()}</span>
                 </div>
+                {(booking.booking_extensions || []).map((ext: any) => (
+                  <ExtensionLedgerRow
+                    key={ext.id}
+                    ext={ext}
+                    bookingId={booking.id}
+                    clientPhone={booking.contact_phone || booking.users?.phone || ''}
+                    onChange={() => fetchBooking?.()}
+                  />
+                ))}
                 {booking.metadata?.extensions?.map((ext: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center py-3 border-b border-border/50 text-purple-400">
+                  <div key={`legacy-${i}`} className="flex justify-between items-center py-3 border-b border-border/50 text-purple-400">
                     <span className="text-sm font-bold">Extension ({ext.days} days)</span>
                     <span className="text-base font-black">+ KES {ext.cost?.toLocaleString()}</span>
                   </div>
                 ))}
+
                 <div className="flex justify-between items-center py-4 bg-muted/20 px-4 rounded-xl mt-4">
                   <span className="text-xs font-black uppercase tracking-widest">Total Received</span>
                   <span className="text-xl font-black text-green-500">KES {(isPaid ? totalCost : 0).toLocaleString()}</span>
