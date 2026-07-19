@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadInspectionPhoto } from '../../services/inspectionUploadService';
+import { CameraCapture } from '../public/BookingFlow/CameraCapture';
 import { resolveDocumentPreviewUrl } from '../../utils/documentPreviewUrl';
 import {
   submitBookingPickup,
@@ -32,6 +33,7 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
   const [currentStep, setCurrentStep] = useState<Step>('details');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [cameraTarget, setCameraTarget] = useState<'fuel' | 'exterior' | 'interior' | null>(null);
 
   // Form State
   const [mileage, setMileage] = useState('');
@@ -146,10 +148,7 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
     }
   };
 
-  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>, target: 'fuel' | 'exterior' | 'interior') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processUpload = async (file: File, target: 'fuel' | 'exterior' | 'interior') => {
     const localPreview = URL.createObjectURL(file);
     if (target === 'fuel') {
       setPhotoFuelMileage(localPreview);
@@ -174,9 +173,22 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
     } finally {
       URL.revokeObjectURL(localPreview);
       setUploading(null);
-      e.target.value = '';
     }
   };
+
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>, target: 'fuel' | 'exterior' | 'interior') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processUpload(file, target);
+    e.target.value = '';
+  };
+
+  const handleCameraCapture = async (file: File) => {
+    const target = cameraTarget;
+    setCameraTarget(null);
+    if (target) await processUpload(file, target);
+  };
+
 
   const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,6 +260,9 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
 
   return (
     <div className="bg-card border border-border rounded-2xl p-6 md:p-8 animate-in slide-in-from-right-4 duration-300">
+      {cameraTarget && (
+        <CameraCapture onCapture={handleCameraCapture} onClose={() => setCameraTarget(null)} />
+      )}
       {/* Header */}
       <div className="border-b border-border pb-4 mb-6 flex justify-between items-center">
         <div>
@@ -331,23 +346,26 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
                   </button>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-border rounded-2xl h-48 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/10 transition-colors">
+                <div className="border-2 border-dashed border-border rounded-2xl h-48 flex flex-col items-center justify-center gap-3 hover:bg-muted/10 transition-colors">
                   {uploading === 'fuel' ? (
                     <Loader2 className="animate-spin text-primary" size={24} />
                   ) : (
                     <>
-                      <Camera className="text-muted-foreground" size={32} />
-                      <span className="text-xs font-bold text-muted-foreground">Take Dashboard Photo</span>
+                      <Camera className="text-primary" size={32} />
+                      <button
+                        type="button"
+                        onClick={() => setCameraTarget('fuel')}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2"
+                      >
+                        <Camera size={14} /> Live Capture
+                      </button>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase cursor-pointer hover:text-foreground">
+                        or upload file
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(e, 'fuel')} />
+                      </label>
                     </>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleUploadFile(e, 'fuel')}
-                  />
-                </label>
+                </div>
               )}
 
               {gpsCoords ? (
@@ -404,22 +422,25 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
                   </div>
                 ))}
                 
-                <label className="border-2 border-dashed border-border rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/10 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setCameraTarget('exterior')}
+                  disabled={uploading === 'exterior'}
+                  className="border-2 border-dashed border-primary/40 rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 transition-colors"
+                >
                   {uploading === 'exterior' ? (
                     <Loader2 className="animate-spin text-primary" size={18} />
                   ) : (
                     <>
-                      <Camera className="text-muted-foreground" size={20} />
-                      <span className="text-[10px] font-bold text-muted-foreground">Add Exterior</span>
+                      <Camera className="text-primary" size={20} />
+                      <span className="text-[10px] font-black text-primary uppercase">Live Capture</span>
                     </>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleUploadFile(e, 'exterior')}
-                  />
+                </button>
+                <label className="border border-dashed border-border rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/10 transition-colors">
+                  <Upload className="text-muted-foreground" size={16} />
+                  <span className="text-[10px] font-bold text-muted-foreground">Upload File</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(e, 'exterior')} />
                 </label>
               </div>
             </div>
@@ -441,22 +462,25 @@ export function DriverInspectionForm({ booking, type, onBack }: DriverInspection
                   </div>
                 ))}
                 
-                <label className="border-2 border-dashed border-border rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/10 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setCameraTarget('interior')}
+                  disabled={uploading === 'interior'}
+                  className="border-2 border-dashed border-primary/40 rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-primary/5 transition-colors"
+                >
                   {uploading === 'interior' ? (
                     <Loader2 className="animate-spin text-primary" size={18} />
                   ) : (
                     <>
-                      <Camera className="text-muted-foreground" size={20} />
-                      <span className="text-[10px] font-bold text-muted-foreground">Add Interior</span>
+                      <Camera className="text-primary" size={20} />
+                      <span className="text-[10px] font-black text-primary uppercase">Live Capture</span>
                     </>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleUploadFile(e, 'interior')}
-                  />
+                </button>
+                <label className="border border-dashed border-border rounded-lg h-24 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/10 transition-colors">
+                  <Upload className="text-muted-foreground" size={16} />
+                  <span className="text-[10px] font-bold text-muted-foreground">Upload File</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(e, 'interior')} />
                 </label>
               </div>
             </div>
