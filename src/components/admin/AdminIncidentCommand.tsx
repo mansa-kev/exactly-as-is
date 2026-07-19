@@ -21,6 +21,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdminExtensionRequestsQueue } from './AdminExtensionRequestsQueue';
+
 
 export function AdminIncidentCommand() {
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -327,6 +329,9 @@ export function AdminIncidentCommand() {
           </div>
         </div>
       </div>
+
+      {/* Extension Requests Queue */}
+      <AdminExtensionRequestsQueue />
     </div>
   );
 }
