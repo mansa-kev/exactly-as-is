@@ -19,6 +19,8 @@ import {
   createBookingReturnHandler,
 } from "../src/server/bookingLifecycleHandler.js";
 import { createBookingExtendHandler } from "../src/server/bookingExtendHandler.js";
+import { canManageLifecycle } from "../src/server/bookingLifecycleHandler.js";
+
 import { createDeleteReservationHandler } from "../src/server/deleteReservationHandler.js";
 import { processBookingPayoutSettlements } from "../src/server/bookingPayoutSettlements.js";
 import {
