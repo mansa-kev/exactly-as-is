@@ -45,14 +45,20 @@ export function createBookingExtendHandler(supabase: SupabaseClient) {
       }
 
       const daysExtended = Number(req.body?.days_extended);
+      const hoursExtended = Number(req.body?.hours_extended) || 0;
       const extensionCost = Number(req.body?.extension_cost);
+      const pricingBreakdown = req.body?.pricing_breakdown ?? {};
 
-      if (!Number.isFinite(daysExtended) || daysExtended < 1) {
-        return res.status(400).json({ success: false, error: 'days_extended must be at least 1.' });
+      if (!Number.isFinite(daysExtended) || daysExtended < 0) {
+        return res.status(400).json({ success: false, error: 'days_extended must be zero or greater.' });
+      }
+      if ((daysExtended + hoursExtended) <= 0) {
+        return res.status(400).json({ success: false, error: 'Extension must be at least 1 hour.' });
       }
       if (!Number.isFinite(extensionCost) || extensionCost < 0) {
         return res.status(400).json({ success: false, error: 'extension_cost must be zero or greater.' });
       }
+
 
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
