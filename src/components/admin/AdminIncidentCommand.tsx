@@ -329,6 +329,9 @@ export function AdminIncidentCommand() {
           </div>
         </div>
       </div>
+
+      {/* Extension Requests Queue */}
+      <AdminExtensionRequestsQueue />
     </div>
   );
 }
