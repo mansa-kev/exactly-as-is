@@ -8,6 +8,7 @@ import { Inbox, Send, Plus, Clock, MessageSquare, User, Shield, AlertCircle, Che
 import { toast } from 'sonner';
 import { getMessageThreadKey } from '../../utils/messagingThread';
 import { extensionPaymentService } from '../../services/extensionPaymentService';
+import { checkExtensionEligibility } from '../../utils/extensionWindow';
 
 
 export function MyInbox() {
@@ -180,6 +181,13 @@ export function MyInbox() {
     e.preventDefault();
     if (!selectedBookingId || !newEndDate) {
       toast.error('Please select a booking and a new drop-off date.');
+      return;
+    }
+
+    const booking = activeBookings.find((b: any) => b.id === selectedBookingId);
+    const eligibility = checkExtensionEligibility(booking);
+    if (!eligibility.eligible) {
+      toast.error(eligibility.reason || 'This booking can no longer be extended.');
       return;
     }
 

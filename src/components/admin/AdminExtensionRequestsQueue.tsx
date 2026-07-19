@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Loader2, Clock, CheckCircle2, XCircle, CreditCard, DollarSign, Calendar, User, Car, ChevronRight, RefreshCw } from 'lucide-react';
 import { computeExtensionQuote } from '../../utils/extensionQuote';
 import { extensionPaymentService } from '../../services/extensionPaymentService';
+import { checkExtensionEligibility, EXTENSION_CUTOFF_HOURS } from '../../utils/extensionWindow';
 
 type OpenStatus = 'requested' | 'quoted' | 'awaiting_payment';
 
@@ -211,7 +212,13 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
   const isAwaiting = row.status === 'awaiting_payment';
   const isPending = row.status === 'requested' || row.status === 'quoted';
 
+  const eligibility = checkExtensionEligibility(bk);
+
   const saveQuote = async (advanceToAwaiting: boolean) => {
+    if (advanceToAwaiting && !eligibility.eligible) {
+      toast.error(eligibility.reason || 'This booking can no longer be extended.');
+      return;
+    }
     setBusy(true);
     try {
       const { data: sess } = await supabase.auth.getSession();
@@ -420,6 +427,14 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
         )}
       </div>
 
+      {/* Ineligibility banner */}
+      {isPending && !eligibility.eligible && (
+        <div className="mx-4 mb-3 p-3 rounded-xl bg-error/10 border border-error/20 text-error text-xs font-bold flex items-start gap-2">
+          <XCircle size={14} className="mt-0.5 flex-shrink-0" />
+          <span>{eligibility.reason || `Extensions must be approved at least ${EXTENSION_CUTOFF_HOURS}h before return.`} Only rejection is allowed now.</span>
+        </div>
+      )}
+
       {/* Footer actions */}
       {isPending && !showReject && (
         <div className="p-4 border-t border-border bg-card flex flex-wrap gap-2 justify-end">
@@ -431,8 +446,9 @@ function ExtensionDetail({ row, onChange }: { row: ExtRow; onChange: () => void 
             className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-xl text-xs font-black flex items-center gap-2">
             {busy ? <Loader2 size={14} className="animate-spin" /> : null} Save Quote
           </button>
-          <button onClick={() => saveQuote(true)} disabled={busy}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black flex items-center gap-2 disabled:opacity-50">
+          <button onClick={() => saveQuote(true)} disabled={busy || !eligibility.eligible}
+            title={!eligibility.eligible ? eligibility.reason : ''}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-black flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             <CheckCircle2 size={14} /> Approve → Awaiting Payment
           </button>
         </div>
