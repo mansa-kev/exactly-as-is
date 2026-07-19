@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { computeExtensionQuote, formatQuoteAmount } from '../../utils/extensionQuote';
+import { extensionPaymentService } from '../../services/extensionPaymentService';
+
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
