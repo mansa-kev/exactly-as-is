@@ -148,6 +148,7 @@ export function AdminFinancials() {
       <div className="flex items-center gap-4 border-b border-border pb-4">
         {[
           { id: 'overview', label: 'Financial Overview' },
+          { id: 'pnl', label: 'P&L / Aging / Tax' },
           { id: 'partner-ledger', label: 'Partner Ledger' },
           { id: 'approvals', label: 'Payment Approvals' },
           { id: 'payouts', label: 'Payout Engine' },
