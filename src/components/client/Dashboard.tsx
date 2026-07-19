@@ -9,12 +9,13 @@ import {
   Inbox, Award, Car, ShieldCheck, Loader2,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getReturnDeadline } from '../../utils/rentalDeadline';
 
-function formatCountdown(endIso: string) {
-  if (!endIso) return '—';
-  const end = new Date(endIso).getTime();
-  const now = Date.now();
-  const diffMs = end - now;
+function formatCountdown(booking: { start_date?: string; end_date?: string; pickup_confirmed_at?: string } | null | undefined) {
+  if (!booking) return '—';
+  const deadline = getReturnDeadline(booking);
+  if (!deadline) return '—';
+  const diffMs = deadline.getTime() - Date.now();
   if (diffMs <= 0) return 'Ends today';
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
