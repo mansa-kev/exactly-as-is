@@ -21,6 +21,10 @@ const optionalEnvVars = [
 ];
 
 export function validateEnv(): void {
+  // Only surface env warnings in development. In production builds, these
+  // warnings leak internal configuration hints into the browser console.
+  if (!import.meta.env.DEV) return;
+
   const missing: string[] = [];
 
   requiredEnvVars.forEach(varName => {
@@ -37,7 +41,7 @@ export function validateEnv(): void {
     return;
   }
 
-  // Log warnings for optional env vars
+  // Log warnings for optional env vars (dev only)
   optionalEnvVars.forEach(varName => {
     if (!import.meta.env[varName]) {
       console.warn(`Optional environment variable not set: ${varName}`);

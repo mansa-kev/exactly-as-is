@@ -366,11 +366,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://linkedupcarsrentals.com/vehicles/toyota-harrier</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://linkedupcarsrentals.com/vehicles/mercedes-benz-g-wagon</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -481,6 +476,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://linkedupcarsrentals.com/vehicles/toyota-harrier</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://linkedupcarsrentals.com/models/1981e284-74c9-4ed5-aa02-802b7e4f78b4</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -512,11 +512,6 @@
   </url>
   <url>
     <loc>https://linkedupcarsrentals.com/models/1aee4bee-f786-4a1b-9f52-4fbf2489b4b5</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://linkedupcarsrentals.com/models/0cf8d00b-839e-4e36-8887-1d937c37f4d1</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -627,6 +622,11 @@
   </url>
   <url>
     <loc>https://linkedupcarsrentals.com/models/e6846663-a69d-4032-9685-e458071b8420</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://linkedupcarsrentals.com/models/0cf8d00b-839e-4e36-8887-1d937c37f4d1</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
