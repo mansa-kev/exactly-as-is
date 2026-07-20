@@ -23,11 +23,23 @@ export function PublicHome() {
   useEffect(() => {
     supabase
       .from('car_reviews')
-      .select('*, user_profiles(full_name), cars(make, model, year), bookings(start_date)')
+      .select('*, cars(make, model, year), bookings(start_date)')
       .eq('status', 'approved')
       .order('rating', { ascending: false })
       .limit(12)
-      .then(({ data }) => setApprovedReviews(data || []));
+      .then(async ({ data }) => {
+        const reviews = data || [];
+        const userIds = Array.from(new Set(reviews.map((r: any) => r.user_id).filter(Boolean)));
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('user_profiles')
+            .select('id, full_name')
+            .in('id', userIds);
+          const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+          reviews.forEach((r: any) => { r.user_profiles = profileMap.get(r.user_id) || null; });
+        }
+        setApprovedReviews(reviews);
+      });
 
     supabase
       .from('blog_posts')
