@@ -220,6 +220,32 @@ export function VehicleModelDetails() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:image" content={image as string} />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: title,
+          image: (images || []).slice(0, 5),
+          description: desc,
+          brand: { '@type': 'Brand', name: model?.make || 'LinkedUp Cars' },
+          category: 'Car Rental',
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'KES',
+            price: model?.daily_rate || model?.base_daily_rate || 0,
+            availability: 'https://schema.org/InStock',
+            url: `https://linkedupcarsrentals.com/vehicles/${generateVehicleSlug(model)}`,
+            seller: { '@type': 'Organization', name: 'LinkedUp Cars Rentals' },
+          },
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://linkedupcarsrentals.com/' },
+            { '@type': 'ListItem', position: 2, name: 'Cars', item: 'https://linkedupcarsrentals.com/cars' },
+            { '@type': 'ListItem', position: 3, name: title, item: `https://linkedupcarsrentals.com/vehicles/${generateVehicleSlug(model)}` },
+          ],
+        })}</script>
       </Helmet>
 
       <div className="relative bg-background min-h-screen overflow-hidden">
