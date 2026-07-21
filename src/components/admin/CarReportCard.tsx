@@ -8,18 +8,12 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, BarChart, Bar, Cell,
 } from 'recharts';
+import { KpiCard, DateRangePicker } from '../shared/reports';
 
 interface Props {
   carId: string;
   onClose: () => void;
 }
-
-const RANGE_OPTIONS = [
-  { label: '30 days', value: 30 },
-  { label: '90 days', value: 90 },
-  { label: '6 months', value: 180 },
-  { label: '12 months', value: 365 },
-];
 
 const EXPENSE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -95,15 +89,7 @@ export function CarReportCard({ carId, onClose }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <select
-              value={range}
-              onChange={(e) => setRange(Number(e.target.value))}
-              className="text-xs bg-muted rounded-lg px-3 py-2 outline-none border border-border focus:ring-2 focus:ring-primary/20"
-            >
-              {RANGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <DateRangePicker value={range} onChange={setRange} />
             <button
               onClick={exportCsv}
               disabled={!report}

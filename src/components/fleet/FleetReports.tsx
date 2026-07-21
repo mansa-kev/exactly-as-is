@@ -8,13 +8,7 @@ import {
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
-
-const RANGES = [
-  { label: '30 days', value: 30 },
-  { label: '90 days', value: 90 },
-  { label: '6 months', value: 180 },
-  { label: '12 months', value: 365 },
-];
+import { KpiCard, DateRangePicker, DataTable, type DataTableColumn } from '../shared/reports';
 const fmt = (n: number) => new Intl.NumberFormat('en-KE', { maximumFractionDigits: 0 }).format(Math.round(n || 0));
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
@@ -83,11 +77,7 @@ export function FleetReports() {
           <p className="text-sm text-muted-foreground">Utilization, idle cars, and monthly P&amp;L.</p>
         </div>
         <div className="flex items-center gap-2">
-          <select value={range} onChange={(e) => setRange(Number(e.target.value))} className="px-3 py-2 rounded-lg bg-muted text-xs border border-border outline-none focus:ring-2 focus:ring-primary/20">
-            {RANGES.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
+          <DateRangePicker value={range} onChange={setRange} />
           <button onClick={exportCsv} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold">
             <Download size={14} /> Export CSV
           </button>
@@ -96,12 +86,12 @@ export function FleetReports() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <Kpi label="Cars" value={fmt(totals.cars)} icon={<CarIcon size={18} />} tone="primary" />
-        <Kpi label="Avg Utilization" value={`${totals.avgUtilization}%`} icon={<Activity size={18} />} tone="blue" bar={totals.avgUtilization} />
-        <Kpi label="Idle Cars" value={fmt(totals.idleCount)} icon={<AlertCircle size={18} />} tone={totals.idleCount > 0 ? 'warning' : 'muted'} />
-        <Kpi label="Revenue" value={`Ksh ${fmt(totals.revenue)}`} icon={<DollarSign size={18} />} tone="success" />
-        <Kpi label="Expenses" value={`Ksh ${fmt(totals.expenses)}`} icon={<Wrench size={18} />} tone="error" />
-        <Kpi
+        <KpiCard label="Cars" value={fmt(totals.cars)} icon={<CarIcon size={18} />} tone="primary" />
+        <KpiCard label="Avg Utilization" value={`${totals.avgUtilization}%`} icon={<Activity size={18} />} tone="blue" bar={totals.avgUtilization} />
+        <KpiCard label="Idle Cars" value={fmt(totals.idleCount)} icon={<AlertCircle size={18} />} tone={totals.idleCount > 0 ? 'warning' : 'muted'} />
+        <KpiCard label="Revenue" value={`Ksh ${fmt(totals.revenue)}`} icon={<DollarSign size={18} />} tone="success" />
+        <KpiCard label="Expenses" value={`Ksh ${fmt(totals.expenses)}`} icon={<Wrench size={18} />} tone="error" />
+        <KpiCard
           label="Net Profit"
           value={`Ksh ${fmt(totals.netProfit)}`}
           icon={profitPositive ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
@@ -205,29 +195,5 @@ export function FleetReports() {
   );
 }
 
-function Kpi({ label, value, icon, tone, bar }: { label: string; value: string; icon: React.ReactNode; tone: string; bar?: number }) {
-  const map: Record<string, string> = {
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    error: 'bg-destructive/10 text-destructive',
-    blue: 'bg-blue-500/10 text-blue-500',
-    muted: 'bg-muted text-muted-foreground',
-  };
-  return (
-    <div className="bg-card border border-border rounded-xl p-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className={`p-1.5 rounded-lg ${map[tone]}`}>{icon}</span>
-      </div>
-      <p className="text-base font-bold leading-tight">{value}</p>
-      {typeof bar === 'number' && (
-        <div className="h-1 bg-muted rounded-full mt-2 overflow-hidden">
-          <div className={map[tone].split(' ')[1].replace('text', 'bg')} style={{ width: `${bar}%`, height: '100%' }} />
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default FleetReports;
