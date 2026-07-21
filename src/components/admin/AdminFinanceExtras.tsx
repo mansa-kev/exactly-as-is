@@ -4,6 +4,7 @@ import { Loader2, TrendingUp, TrendingDown, AlertCircle, FileText, Download } fr
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, ComposedChart,
 } from 'recharts';
+import { KpiCard, DateRangePicker, DataTable, type DataTableColumn } from '../shared/reports';
 
 const fmt = (n: number) => new Intl.NumberFormat('en-KE', { maximumFractionDigits: 0 }).format(Math.round(n || 0));
 const BUCKET_LABELS: Record<string, string> = {
@@ -69,12 +70,7 @@ export function AdminFinanceExtras() {
           ))}
         </div>
         <div className="flex gap-2">
-          <select value={range} onChange={(e) => setRange(Number(e.target.value))} className="px-3 py-2 rounded-lg bg-muted text-xs border border-border">
-            <option value={30}>30 days</option>
-            <option value={90}>90 days</option>
-            <option value={180}>6 months</option>
-            <option value={365}>12 months</option>
-          </select>
+          <DateRangePicker value={range} onChange={setRange} />
           {tab === 'pnl' && (
             <button onClick={exportPnl} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold">
               <Download size={14} /> CSV
