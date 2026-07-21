@@ -263,42 +263,6 @@ export function CarReportCard({ carId, onClose }: Props) {
   );
 }
 
-function Kpi({
-  label,
-  value,
-  icon,
-  tone,
-  bar,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  tone: 'primary' | 'success' | 'warning' | 'error' | 'blue' | 'muted';
-  bar?: number;
-}) {
-  const toneMap: Record<string, string> = {
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    error: 'bg-destructive/10 text-destructive',
-    blue: 'bg-blue-500/10 text-blue-500',
-    muted: 'bg-muted text-muted-foreground',
-  };
-  return (
-    <div className="bg-card border border-border rounded-xl p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className={`p-1.5 rounded-lg ${toneMap[tone]}`}>{icon}</span>
-      </div>
-      <p className="text-base sm:text-lg font-bold leading-tight">{value}</p>
-      {typeof bar === 'number' && (
-        <div className="h-1 bg-muted rounded-full mt-2 overflow-hidden">
-          <div className={`h-full ${toneMap[tone].split(' ')[1].replace('text', 'bg')}`} style={{ width: `${bar}%` }} />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
