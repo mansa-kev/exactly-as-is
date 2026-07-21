@@ -118,50 +118,50 @@ export function CarReportCard({ carId, onClose }: Props) {
             <>
               {/* KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                <Kpi
+                <KpiCard
                   label="Total Revenue"
                   value={`Ksh ${fmtKsh(kpis.totalRevenue)}`}
                   icon={<DollarSign size={18} />}
                   tone="primary"
                 />
-                <Kpi
+                <KpiCard
                   label="Total Costs"
                   value={`Ksh ${fmtKsh(kpis.totalExpenses)}`}
                   icon={<Wrench size={18} />}
                   tone="warning"
                 />
-                <Kpi
+                <KpiCard
                   label="Net Profit"
                   value={`Ksh ${fmtKsh(kpis.netProfit)}`}
                   icon={profitPositive ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                   tone={profitPositive ? 'success' : 'error'}
                 />
-                <Kpi
+                <KpiCard
                   label="ROI"
                   value={`${kpis.roi.toFixed(1)}%`}
                   icon={profitPositive ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                   tone={profitPositive ? 'success' : 'error'}
                 />
-                <Kpi
+                <KpiCard
                   label="Utilization"
                   value={`${kpis.utilizationRate}%`}
                   icon={<Activity size={18} />}
                   tone="blue"
                   bar={kpis.utilizationRate}
                 />
-                <Kpi
+                <KpiCard
                   label="Total Trips"
                   value={kpis.tripsCount.toString()}
                   icon={<CarIcon size={18} />}
                   tone="muted"
                 />
-                <Kpi
+                <KpiCard
                   label="Booked Days"
                   value={`${kpis.totalBookingDays}`}
                   icon={<Calendar size={18} />}
                   tone="muted"
                 />
-                <Kpi
+                <KpiCard
                   label="Avg / Trip"
                   value={`Ksh ${fmtKsh(kpis.revenuePerTrip)}`}
                   icon={<DollarSign size={18} />}
