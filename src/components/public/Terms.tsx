@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 
 const sections = [
@@ -52,6 +53,15 @@ const sections = [
 export function Terms() {
   return (
     <div className="pt-32 pb-20">
+      <Helmet>
+        <title>Terms & Conditions | LinkedUp Cars Rentals</title>
+        <meta name="description" content="Read the terms and conditions for renting vehicles from LinkedUp Cars Rentals — eligibility, booking, insurance, cancellation and liability." />
+        <link rel="canonical" href="https://linkedupcarsrentals.com/terms" />
+        <meta name="robots" content="index, follow" />
+        <meta property="og:title" content="Terms & Conditions — LinkedUp Cars Rentals" />
+        <meta property="og:url" content="https://linkedupcarsrentals.com/terms" />
+      </Helmet>
+
       {/* Hero */}
       <section className="px-6 mb-20">
         <div className="max-w-7xl mx-auto text-center">

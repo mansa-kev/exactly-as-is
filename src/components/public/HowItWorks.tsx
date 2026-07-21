@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'motion/react';
 import { Search, CalendarCheck, Car, Star, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -33,6 +34,35 @@ const steps = [
 export function HowItWorks() {
   return (
     <div className="pt-32 pb-20">
+      <Helmet>
+        <title>How It Works | Car Hire in Nairobi — LinkedUp Cars Rentals</title>
+        <meta name="description" content="Book a car in Nairobi in 4 simple steps — browse the fleet, reserve online, pick up, drive. Self-drive and chauffeur rentals with M-Pesa checkout." />
+        <link rel="canonical" href="https://linkedupcarsrentals.com/how-it-works" />
+        <meta property="og:title" content="How It Works — LinkedUp Cars Rentals" />
+        <meta property="og:url" content="https://linkedupcarsrentals.com/how-it-works" />
+        <meta property="og:description" content="Renting a car in Nairobi in four simple steps: browse, book, pick up, drive." />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'HowTo',
+          name: 'How to hire a car with LinkedUp Cars Rentals',
+          description: 'Rent a car in Nairobi in four simple steps.',
+          step: [
+            { '@type': 'HowToStep', position: 1, name: 'Browse & Choose', text: 'Search the fleet and pick your ideal vehicle.' },
+            { '@type': 'HowToStep', position: 2, name: 'Book Online', text: 'Choose your dates and pay with M-Pesa or on pickup.' },
+            { '@type': 'HowToStep', position: 3, name: 'Pick Up & Drive', text: 'Collect the car at the agreed location and hit the road.' },
+            { '@type': 'HowToStep', position: 4, name: 'Return & Review', text: 'Drop the car back and share your experience.' },
+          ],
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://linkedupcarsrentals.com/' },
+            { '@type': 'ListItem', position: 2, name: 'How It Works', item: 'https://linkedupcarsrentals.com/how-it-works' },
+          ],
+        })}</script>
+      </Helmet>
+
       {/* Hero */}
       <section className="px-6 mb-32">
         <div className="max-w-7xl mx-auto text-center">
