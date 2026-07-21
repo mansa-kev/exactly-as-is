@@ -133,7 +133,7 @@ export function InsightsHome() {
                     >
                       {featured.featured_image ? (
                         <div className="relative h-64 md:h-80 overflow-hidden">
-                          <img src={featured.featured_image} alt={featured.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          <img src={featured.featured_image} alt={featured.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
                           <div className="absolute bottom-0 left-0 p-8">
                             <div className="flex items-center gap-3 mb-3">
@@ -181,7 +181,7 @@ export function InsightsHome() {
                       >
                         {post.featured_image && (
                           <div className="h-44 overflow-hidden">
-                            <img src={post.featured_image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150" />
+                            <img src={post.featured_image} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150" />
                           </div>
                         )}
                         <div className="p-6">

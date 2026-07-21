@@ -8,18 +8,12 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, BarChart, Bar, Cell,
 } from 'recharts';
+import { KpiCard, DateRangePicker } from '../shared/reports';
 
 interface Props {
   carId: string;
   onClose: () => void;
 }
-
-const RANGE_OPTIONS = [
-  { label: '30 days', value: 30 },
-  { label: '90 days', value: 90 },
-  { label: '6 months', value: 180 },
-  { label: '12 months', value: 365 },
-];
 
 const EXPENSE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -95,15 +89,7 @@ export function CarReportCard({ carId, onClose }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <select
-              value={range}
-              onChange={(e) => setRange(Number(e.target.value))}
-              className="text-xs bg-muted rounded-lg px-3 py-2 outline-none border border-border focus:ring-2 focus:ring-primary/20"
-            >
-              {RANGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <DateRangePicker value={range} onChange={setRange} />
             <button
               onClick={exportCsv}
               disabled={!report}
@@ -132,50 +118,50 @@ export function CarReportCard({ carId, onClose }: Props) {
             <>
               {/* KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                <Kpi
+                <KpiCard
                   label="Total Revenue"
                   value={`Ksh ${fmtKsh(kpis.totalRevenue)}`}
                   icon={<DollarSign size={18} />}
                   tone="primary"
                 />
-                <Kpi
+                <KpiCard
                   label="Total Costs"
                   value={`Ksh ${fmtKsh(kpis.totalExpenses)}`}
                   icon={<Wrench size={18} />}
                   tone="warning"
                 />
-                <Kpi
+                <KpiCard
                   label="Net Profit"
                   value={`Ksh ${fmtKsh(kpis.netProfit)}`}
                   icon={profitPositive ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                   tone={profitPositive ? 'success' : 'error'}
                 />
-                <Kpi
+                <KpiCard
                   label="ROI"
                   value={`${kpis.roi.toFixed(1)}%`}
                   icon={profitPositive ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                   tone={profitPositive ? 'success' : 'error'}
                 />
-                <Kpi
+                <KpiCard
                   label="Utilization"
                   value={`${kpis.utilizationRate}%`}
                   icon={<Activity size={18} />}
                   tone="blue"
                   bar={kpis.utilizationRate}
                 />
-                <Kpi
+                <KpiCard
                   label="Total Trips"
                   value={kpis.tripsCount.toString()}
                   icon={<CarIcon size={18} />}
                   tone="muted"
                 />
-                <Kpi
+                <KpiCard
                   label="Booked Days"
                   value={`${kpis.totalBookingDays}`}
                   icon={<Calendar size={18} />}
                   tone="muted"
                 />
-                <Kpi
+                <KpiCard
                   label="Avg / Trip"
                   value={`Ksh ${fmtKsh(kpis.revenuePerTrip)}`}
                   icon={<DollarSign size={18} />}
@@ -277,42 +263,6 @@ export function CarReportCard({ carId, onClose }: Props) {
   );
 }
 
-function Kpi({
-  label,
-  value,
-  icon,
-  tone,
-  bar,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  tone: 'primary' | 'success' | 'warning' | 'error' | 'blue' | 'muted';
-  bar?: number;
-}) {
-  const toneMap: Record<string, string> = {
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    error: 'bg-destructive/10 text-destructive',
-    blue: 'bg-blue-500/10 text-blue-500',
-    muted: 'bg-muted text-muted-foreground',
-  };
-  return (
-    <div className="bg-card border border-border rounded-xl p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className={`p-1.5 rounded-lg ${toneMap[tone]}`}>{icon}</span>
-      </div>
-      <p className="text-base sm:text-lg font-bold leading-tight">{value}</p>
-      {typeof bar === 'number' && (
-        <div className="h-1 bg-muted rounded-full mt-2 overflow-hidden">
-          <div className={`h-full ${toneMap[tone].split(' ')[1].replace('text', 'bg')}`} style={{ width: `${bar}%` }} />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (

@@ -184,6 +184,34 @@ export function CarDetails() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={carTitle} />
         <meta name="twitter:image" content={carImage as string} />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: `${car.make} ${car.model} ${car.year || ''}`.trim(),
+          image: images.slice(0, 5),
+          description: carDesc,
+          brand: { '@type': 'Brand', name: car.make },
+          category: 'Car Rental',
+          sku: car.license_plate || car.id,
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'KES',
+            price: car.daily_rate || car.price_per_day || 0,
+            availability: 'https://schema.org/InStock',
+            url: `https://linkedupcarsrentals.com/cars/${car.id}`,
+            priceValidUntil: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().split('T')[0],
+            seller: { '@type': 'Organization', name: 'LinkedUp Cars Rentals' },
+          },
+        })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://linkedupcarsrentals.com/' },
+            { '@type': 'ListItem', position: 2, name: 'Cars', item: 'https://linkedupcarsrentals.com/cars' },
+            { '@type': 'ListItem', position: 3, name: `${car.make} ${car.model}`, item: `https://linkedupcarsrentals.com/cars/${car.id}` },
+          ],
+        })}</script>
       </Helmet>
     <div className="relative bg-background min-h-screen overflow-hidden">
       {/* Immersive Background with Gradient Overlay */}
