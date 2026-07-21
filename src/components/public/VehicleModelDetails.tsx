@@ -273,7 +273,7 @@ export function VehicleModelDetails() {
                           activeImage === idx ? 'border-primary shadow-lg shadow-primary/20' : 'border-white/10'
                         }`}
                       >
-                        <img src={img} alt="thumbnail" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={img} alt="thumbnail" loading="lazy" decoding="async" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </motion.button>
                     ))}
                   </div>

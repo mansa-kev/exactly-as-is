@@ -43,6 +43,15 @@ const sections = [
 export function Privacy() {
   return (
     <div className="pt-32 pb-20">
+      <Helmet>
+        <title>Privacy Policy | LinkedUp Cars Rentals</title>
+        <meta name="description" content="How LinkedUp Cars Rentals collects, uses, and safeguards your personal information when you book a vehicle in Nairobi." />
+        <link rel="canonical" href="https://linkedupcarsrentals.com/privacy" />
+        <meta name="robots" content="index, follow" />
+        <meta property="og:title" content="Privacy Policy — LinkedUp Cars Rentals" />
+        <meta property="og:url" content="https://linkedupcarsrentals.com/privacy" />
+      </Helmet>
+
       {/* Hero */}
       <section className="px-6 mb-20">
         <div className="max-w-7xl mx-auto text-center">
