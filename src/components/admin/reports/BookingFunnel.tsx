@@ -23,7 +23,7 @@ export function BookingFunnel() {
         supabase.from('car_reservations').select('id, status, created_at').gte('created_at', sinceISO),
         supabase
           .from('bookings')
-          .select('id, status, payment_status, pickup_confirmed_at, cancellation_reason, created_at')
+          .select('id, status, payment_status, pickup_confirmed_at, created_at')
           .gte('created_at', sinceISO),
       ]);
 
@@ -45,17 +45,10 @@ export function BookingFunnel() {
         { label: 'Completed', value: completed },
       ];
 
-      const reasonMap: Record<string, number> = {};
-      bookings
-        .filter((b: any) => b.status === 'cancelled')
-        .forEach((b: any) => {
-          const key = (b.cancellation_reason || 'Unspecified').slice(0, 60);
-          reasonMap[key] = (reasonMap[key] || 0) + 1;
-        });
-      const reasons = Object.entries(reasonMap)
-        .map(([reason, count]) => ({ reason, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
+      const cancelledCount = bookings.filter((b: any) => b.status === 'cancelled').length;
+      const reasons = [
+        { reason: 'Cancelled bookings', count: cancelledCount },
+      ].filter((r) => r.count > 0);
 
       if (!cancelled) {
         setStages(stagesData);
