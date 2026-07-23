@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/adminService';
-import { TrendingUp, Users, Car, LayoutGrid, Handshake, Building2, GitBranch, Search, Loader2 } from 'lucide-react';
+import { TrendingUp, Users, Car, LayoutGrid, Handshake, Building2, GitBranch, Search, Loader2, PieChart, Activity, CreditCard } from 'lucide-react';
 import { FleetOwnerPortfolio } from './reports/FleetOwnerPortfolio';
 import { OutsourcedPartnerLedger } from './reports/OutsourcedPartnerLedger';
 import { BookingFunnel } from './reports/BookingFunnel';
 import { CustomQuery } from './reports/CustomQuery';
+import { RevenueMix } from './reports/RevenueMix';
+import { UtilizationHeatmap } from './reports/UtilizationHeatmap';
+import { PaymentHealth } from './reports/PaymentHealth';
 
-type TabId = 'overview' | 'fleet-owners' | 'outsourced' | 'funnel' | 'custom';
+type TabId = 'overview' | 'fleet-owners' | 'outsourced' | 'revenue-mix' | 'heatmap' | 'payments' | 'funnel' | 'custom';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ size?: number | string }> }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'fleet-owners', label: 'Fleet Owners', icon: Building2 },
   { id: 'outsourced', label: 'Outsourced Partners', icon: Handshake },
+  { id: 'revenue-mix', label: 'Revenue Mix', icon: PieChart },
+  { id: 'heatmap', label: 'Utilization Heatmap', icon: Activity },
+  { id: 'payments', label: 'Payment Health', icon: CreditCard },
   { id: 'funnel', label: 'Booking Funnel', icon: GitBranch },
   { id: 'custom', label: 'Custom Query', icon: Search },
 ];
@@ -120,6 +126,9 @@ export function AdminReports() {
         {tab === 'overview' && <Overview />}
         {tab === 'fleet-owners' && <FleetOwnerPortfolio />}
         {tab === 'outsourced' && <OutsourcedPartnerLedger />}
+        {tab === 'revenue-mix' && <RevenueMix />}
+        {tab === 'heatmap' && <UtilizationHeatmap />}
+        {tab === 'payments' && <PaymentHealth />}
         {tab === 'funnel' && <BookingFunnel />}
         {tab === 'custom' && <CustomQuery />}
       </div>
