@@ -136,6 +136,9 @@ export function AdminReports() {
         {tab === 'heatmap' && <UtilizationHeatmap />}
         {tab === 'payments' && <PaymentHealth />}
         {tab === 'funnel' && <BookingFunnel />}
+        {tab === 'cohorts' && <CustomerCohorts />}
+        {tab === 'attribution' && <MarketingAttribution />}
+        {tab === 'drivers' && <DriverPerformance />}
         {tab === 'custom' && <CustomQuery />}
       </div>
     </div>
