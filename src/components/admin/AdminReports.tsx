@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/adminService';
-import { TrendingUp, Users, Car, LayoutGrid, Handshake, Building2, GitBranch, Search, Loader2, PieChart, Activity, CreditCard } from 'lucide-react';
+import { TrendingUp, Users, Car, LayoutGrid, Handshake, Building2, GitBranch, Search, Loader2, PieChart, Activity, CreditCard, Repeat, Megaphone, UserCheck } from 'lucide-react';
 import { FleetOwnerPortfolio } from './reports/FleetOwnerPortfolio';
 import { OutsourcedPartnerLedger } from './reports/OutsourcedPartnerLedger';
 import { BookingFunnel } from './reports/BookingFunnel';
@@ -8,8 +8,11 @@ import { CustomQuery } from './reports/CustomQuery';
 import { RevenueMix } from './reports/RevenueMix';
 import { UtilizationHeatmap } from './reports/UtilizationHeatmap';
 import { PaymentHealth } from './reports/PaymentHealth';
+import { CustomerCohorts } from './reports/CustomerCohorts';
+import { MarketingAttribution } from './reports/MarketingAttribution';
+import { DriverPerformance } from './reports/DriverPerformance';
 
-type TabId = 'overview' | 'fleet-owners' | 'outsourced' | 'revenue-mix' | 'heatmap' | 'payments' | 'funnel' | 'custom';
+type TabId = 'overview' | 'fleet-owners' | 'outsourced' | 'revenue-mix' | 'heatmap' | 'payments' | 'funnel' | 'cohorts' | 'attribution' | 'drivers' | 'custom';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ size?: number | string }> }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
@@ -19,6 +22,9 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<{ size?: numbe
   { id: 'heatmap', label: 'Utilization Heatmap', icon: Activity },
   { id: 'payments', label: 'Payment Health', icon: CreditCard },
   { id: 'funnel', label: 'Booking Funnel', icon: GitBranch },
+  { id: 'cohorts', label: 'Customer Cohorts', icon: Repeat },
+  { id: 'attribution', label: 'Marketing Attribution', icon: Megaphone },
+  { id: 'drivers', label: 'Driver Performance', icon: UserCheck },
   { id: 'custom', label: 'Custom Query', icon: Search },
 ];
 
