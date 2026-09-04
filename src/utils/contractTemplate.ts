@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * 🔒 LOCKED FILE - DO NOT MODIFY
+ * ============================================================================
+ * The formatting, PDF generation dimensions, and proxy wrappers in this file 
+ * have been carefully calibrated. DO NOT alter the padding, width, or CSP proxy
+ * logic without explicit approval.
+ * ============================================================================
+ */
+
 import { toProxiedAssetUrl } from './assetUrl.js';
 
 export type ContractBookingData = Record<string, any>;
