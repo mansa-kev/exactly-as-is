@@ -238,7 +238,8 @@ export function applyTemplateReplacements(
 ): string {
   const resolvedCar = contractVehicleToCarShape(car, vehicleModelId);
   const clientName = getClientNameFromBooking(bookingData);
-  const clientSignature = signatureData || bookingData?.signatureData || bookingData?.signatureUrl || '';
+  const rawClientSignature = signatureData || bookingData?.signatureData || bookingData?.signatureUrl || '';
+  const clientSignature = toProxiedAssetUrl(rawClientSignature) || rawClientSignature;
   const companySig = toProxiedAssetUrl(settings.company_signature_url) || settings.company_signature_url || BLANK_SIGNATURE;
   const contractLogo =
     toProxiedAssetUrl(settings.contract_logo || settings.site_logo || settings.logo_url) ||
@@ -359,10 +360,7 @@ export function wrapContractHtmlForPdf(html: string): string {
 
   // Root container styles for standard A4 width
   const overrideStyles = `
-    width: 794px !important;
-    max-width: 794px !important;
     margin: 0 auto !important;
-    padding: 32px !important;
     box-sizing: border-box !important;
     background: #ffffff !important;
     color: #111 !important;

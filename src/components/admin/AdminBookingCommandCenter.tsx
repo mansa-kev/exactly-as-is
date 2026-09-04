@@ -6,7 +6,7 @@ import { extensionPaymentService } from '../../services/extensionPaymentService'
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
-import { resolveAssetUrl } from '../../utils/assetUrl';
+import { resolveAssetUrl, toProxiedAssetUrl } from '../../utils/assetUrl';
 import { 
   ChevronLeft, Loader2, CreditCard, FileText, CheckCircle2, 
   XCircle, Car, MapPin, Flag, AlertTriangle, ShieldCheck, 
@@ -924,22 +924,24 @@ export function AdminBookingCommandCenter() {
     </div>
   );
 
-  const ImageTile = ({ url, label }: { url?: string; label: string }) => (
+  const ImageTile = ({ url, label }: { url?: string; label: string }) => {
+    const proxiedUrl = url ? toProxiedAssetUrl(url) || url : undefined;
+    return (
     <div>
       <button
-        onClick={() => url && setLightboxUrl(url)}
-        disabled={!url}
+        onClick={() => proxiedUrl && setLightboxUrl(proxiedUrl)}
+        disabled={!proxiedUrl}
         className="w-full h-32 rounded-xl overflow-hidden border border-border bg-muted/30 flex items-center justify-center hover:border-primary/50 transition-all disabled:cursor-default cursor-zoom-in group"
       >
-        {url
-          ? <img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150" />
+        {proxiedUrl
+          ? <img src={proxiedUrl} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150" />
           : <FileText size={24} className="text-muted-foreground opacity-50" />}
       </button>
       <p className="text-xs text-muted-foreground mt-2 text-center font-medium">
-        {label} {url && <span className="text-primary">· zoom</span>}
+        {label} {proxiedUrl && <span className="text-primary">· zoom</span>}
       </p>
     </div>
-  );
+  )};
 
   // Banner Colors
   let bannerColor = 'bg-primary border-primary';
@@ -1601,8 +1603,8 @@ export function AdminBookingCommandCenter() {
               <SectionCard title="Client Identity" icon={<User size={16} />}>
                 <div className="flex gap-6 items-start">
                   {docs.facePhotoUrl ? (
-                    <button onClick={() => setLightboxUrl(docs.facePhotoUrl)} className="shrink-0 focus:outline-none group">
-                      <img src={docs.facePhotoUrl} alt="Selfie" className="w-24 h-24 rounded-2xl object-cover border-2 border-primary/20 group-hover:border-primary transition-colors" />
+                    <button onClick={() => setLightboxUrl(toProxiedAssetUrl(docs.facePhotoUrl) || docs.facePhotoUrl)} className="shrink-0 focus:outline-none group">
+                      <img src={toProxiedAssetUrl(docs.facePhotoUrl) || docs.facePhotoUrl} alt="Selfie" className="w-24 h-24 rounded-2xl object-cover border-2 border-primary/20 group-hover:border-primary transition-colors" />
                     </button>
                   ) : (
                     <div className="w-24 h-24 rounded-2xl bg-muted/40 border border-border flex items-center justify-center shrink-0">
@@ -1693,8 +1695,8 @@ export function AdminBookingCommandCenter() {
                   {signatureData && signatureData !== 'signed_physically_in_person' && (
                     <div>
                       <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">Digital Signature Specimen</p>
-                      <button type="button" onClick={() => setLightboxUrl(signatureData)} className="cursor-zoom-in w-full">
-                        <img src={signatureData} alt="Signature" className="h-24 w-full bg-white rounded-xl p-2 border border-border hover:border-primary transition-colors object-contain" />
+                      <button type="button" onClick={() => setLightboxUrl(toProxiedAssetUrl(signatureData) || signatureData)} className="cursor-zoom-in w-full">
+                        <img src={toProxiedAssetUrl(signatureData) || signatureData} alt="Signature" className="h-24 w-full bg-white rounded-xl p-2 border border-border hover:border-primary transition-colors object-contain" />
                       </button>
                     </div>
                   )}
