@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 type BookingSessionData = Record<string, any>;
 
@@ -34,7 +34,7 @@ export function useBookingSession() {
     }
   }, []);
 
-  const saveSession = (bookingData: Partial<BookingSessionData>, currentStep: number) => {
+  const saveSession = useCallback((bookingData: Partial<BookingSessionData>, currentStep: number) => {
     const newSession: BookingSession = {
       bookingData,
       currentStep,
@@ -43,12 +43,12 @@ export function useBookingSession() {
     
     setSession(newSession);
     localStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
-  };
+  }, []);
 
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
     setSession(null);
     localStorage.removeItem(SESSION_KEY);
-  };
+  }, []);
 
   const isSessionValid = () => {
     return session && (Date.now() - session.timestamp < SESSION_EXPIRY);
