@@ -35,6 +35,7 @@ export function Step1({ car, onNext, initialData }: Step1Props) {
   const [total, setTotal] = useState(0);
   const [activePromo, setActivePromo] = useState<Promotion | null>(null);
   const [discountedTotal, setDiscountedTotal] = useState(0);
+  const [reservationFee, setReservationFee] = useState(0);
 
   // Fetch active promo for this car's category
   useEffect(() => {
@@ -46,16 +47,17 @@ export function Step1({ car, onNext, initialData }: Step1Props) {
       const diffDays = calculateRentalDays(startDate, endDate);
       setDays(diffDays);
       const originalTotal = diffDays * car.daily_rate;
-      setTotal(originalTotal);
-
+      
+      let computedDiscounted = originalTotal;
       if (activePromo) {
         const { discounted } = promotionService.applyDiscount(car.daily_rate, activePromo);
-        setDiscountedTotal(diffDays * discounted);
-      } else {
-        setDiscountedTotal(originalTotal);
+        computedDiscounted = diffDays * discounted;
       }
+
+      setTotal(Math.max(0, originalTotal - reservationFee));
+      setDiscountedTotal(Math.max(0, computedDiscounted - reservationFee));
     }
-  }, [startDate, endDate, car.daily_rate, activePromo]);
+  }, [startDate, endDate, car.daily_rate, activePromo, reservationFee]);
 
   useEffect(() => {
     if (needsChauffeur) {
@@ -74,6 +76,7 @@ export function Step1({ car, onNext, initialData }: Step1Props) {
     setDropoffLocation(initialData.dropoffLocation || '');
     setNeedsChauffeur(Boolean(initialData.needsChauffeur));
     setSelectedDriver(initialData.driverId || null);
+    setReservationFee(initialData.reservationFee || 0);
   }, [initialData]);
 
   const fetchAvailableDrivers = async () => {
@@ -179,6 +182,19 @@ export function Step1({ car, onNext, initialData }: Step1Props) {
             />
           </div>
         </div>
+
+        {/* Reservation Date Info */}
+        {reservationFee > 0 && (
+          <div className="bg-primary/10 border border-primary/20 rounded-[16px] p-4 flex gap-3 items-start">
+            <Calendar className="text-primary shrink-0" size={16} />
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Dates Pre-filled</p>
+              <p className="text-xs text-primary/80">
+                Your reserved dates are pre-filled. You can extend your rental if needed, and your KES {reservationFee.toLocaleString()} reservation fee will still be applied to the final total.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Date Grid */}
         <div className="grid grid-cols-2 gap-3 md:gap-6">
@@ -318,22 +334,30 @@ export function Step1({ car, onNext, initialData }: Step1Props) {
           </div>
 
           {/* Promo discount breakdown */}
-          {activePromo && discountedTotal < total && (
+          {(activePromo && discountedTotal < total) || reservationFee > 0 ? (
             <div className="pt-3 border-t border-primary/10 space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-white/60">Rental ({days} days x KES {car.daily_rate.toLocaleString()})</span>
-                <span className="text-white/60">KES {total.toLocaleString()}</span>
+                <span className="text-white/60">KES {(days * car.daily_rate).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-green-400 font-bold">{activePromo.title} (-{activePromo.discount_type === 'percentage' ? `${activePromo.discount_value}%` : `KES ${activePromo.discount_value}`})</span>
-                <span className="text-green-400 font-bold">- KES {(total - discountedTotal).toLocaleString()}</span>
-              </div>
+              {activePromo && discountedTotal < total && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-green-400 font-bold">{activePromo.title} (-{activePromo.discount_type === 'percentage' ? `${activePromo.discount_value}%` : `KES ${activePromo.discount_value}`})</span>
+                  <span className="text-green-400 font-bold">- KES {(total - discountedTotal).toLocaleString()}</span>
+                </div>
+              )}
+              {reservationFee > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-green-400 font-bold">Reservation Fee Paid</span>
+                  <span className="text-green-400 font-bold">- KES {reservationFee.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-primary/10">
                 <span className="text-white">You Pay</span>
-                <span className="text-primary font-black">KES {discountedTotal.toLocaleString()}</span>
+                <span className="text-primary font-black">KES {(activePromo ? discountedTotal : total).toLocaleString()}</span>
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="pt-4 border-t border-primary/10 flex items-center gap-2 text-[10px] text-primary/60 font-bold uppercase tracking-widest">
             <ShieldCheck size={14} />

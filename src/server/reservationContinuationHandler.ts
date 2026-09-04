@@ -56,7 +56,12 @@ export function createPrepareContinuationHandler(supabase: SupabaseClient) {
         return res.status(500).json({ success: false, error: updateError.message });
       }
 
-      const origin = req.get('origin') || `${req.protocol}://${req.get('host')}`;
+      let origin = process.env.CLIENT_APP_URL || 'https://linkedupcarsrentals.com';
+      // If running locally without CLIENT_APP_URL, default to the local Vite dev server port
+      if (!process.env.CLIENT_APP_URL && (req.get('origin')?.includes('localhost') || req.get('host')?.includes('localhost'))) {
+        origin = 'http://localhost:5173';
+      }
+
       const continuationTarget = reservation.car_id
         ? `/cars/${reservation.car_id}`
         : reservation.vehicle_model_id

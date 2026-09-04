@@ -23,7 +23,8 @@ import {
   Phone,
   Clock,
   MapPin,
-  PenTool
+  PenTool,
+  Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -215,6 +216,7 @@ export function AdminReservations() {
   const [preparingBookingId, setPreparingBookingId] = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Reservation | null>(null);
+  const [generatedLinkModal, setGeneratedLinkModal] = useState<{ link: string, reservation: Reservation } | null>(null);
 
   const fetchReservations = async () => {
     setLoading(true);
@@ -351,9 +353,7 @@ export function AdminReservations() {
       const result = await reservationService.prepareBookingContinuation(reservation.id, 'admin', true);
       if (!result?.link) throw new Error('Booking continuation link could not be prepared');
 
-      try { await navigator.clipboard.writeText(result.link); } catch {}
-      window.open(result.link, '_blank', 'noopener,noreferrer');
-      toast.success('Booking continuation is ready. The link was copied and opened in a new tab.');
+      setGeneratedLinkModal({ link: result.link, reservation });
       fetchReservations();
     } catch (error: any) {
       toast.error(error.message || 'Failed to prepare booking continuation');
@@ -547,6 +547,52 @@ export function AdminReservations() {
              <div className="flex gap-3">
                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl font-bold bg-muted hover:bg-muted/80 transition-colors">Cancel</button>
                <button onClick={() => handleDeleteReservation(deleteConfirm)} className="flex-1 py-2.5 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 transition-colors">Delete</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generated Link Share Modal */}
+      {generatedLinkModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 p-6 text-center">
+             <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+               <CheckCircle2 size={24} />
+             </div>
+             <h3 className="text-lg font-black mb-2">Booking Link Ready!</h3>
+             <p className="text-sm text-muted-foreground mb-4">
+               The client can use this link to upload their documents, sign the contract, and pay the remaining balance.
+             </p>
+             
+             <div className="bg-muted/50 p-3 rounded-xl flex items-center gap-2 mb-6 text-left border border-border overflow-hidden">
+               <span className="text-xs truncate text-muted-foreground flex-1 select-all">{generatedLinkModal.link}</span>
+               <button 
+                 onClick={() => {
+                   navigator.clipboard.writeText(generatedLinkModal.link);
+                   toast.success('Link copied to clipboard!');
+                 }}
+                 className="p-1.5 bg-card hover:bg-muted text-foreground rounded-lg border border-border shrink-0 transition-colors"
+                 title="Copy Link"
+               >
+                 <Copy size={14} />
+               </button>
+             </div>
+
+             <div className="flex gap-3">
+               <button onClick={() => setGeneratedLinkModal(null)} className="flex-1 py-2.5 rounded-xl font-bold bg-muted hover:bg-muted/80 transition-colors text-sm">Close</button>
+               <button 
+                 onClick={() => {
+                   const r = generatedLinkModal.reservation;
+                   const phone = r.contact_phone || r.client?.phone_number || '';
+                   const cleanPhone = phone.replace(/[^0-9]/g, '');
+                   const message = `Hello ${r.contact_name || r.client?.full_name || ''}, your reservation is confirmed! Please use this secure link to upload your documents, sign the contract, and complete your booking payment: ${generatedLinkModal.link}`;
+                   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                   setGeneratedLinkModal(null);
+                 }} 
+                 className="flex-1 py-2.5 rounded-xl font-bold bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors text-sm flex items-center justify-center gap-2"
+               >
+                 Share via WhatsApp
+               </button>
              </div>
           </div>
         </div>
