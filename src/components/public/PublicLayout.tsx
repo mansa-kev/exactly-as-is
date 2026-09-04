@@ -106,7 +106,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Mobile Top Bar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 min-h-16 glass z-50 flex items-center justify-between px-5 relative">
+      <header className="md:hidden fixed top-0 left-0 right-0 min-h-16 glass z-50 flex items-center justify-between px-5">
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -182,7 +182,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 pt-20 md:pt-20 pb-20 md:pb-0">
+      <main className={`flex-1 pb-20 md:pb-0 ${location.pathname === '/' ? 'pt-0' : 'pt-20 md:pt-20'}`}>
         {children}
       </main>
 
