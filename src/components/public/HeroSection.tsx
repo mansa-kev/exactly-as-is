@@ -205,7 +205,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center mb-6 md:mb-12 -mt-10 md:-mt-20"
+          className="text-center mb-6 md:mb-12 pt-16 md:pt-20"
         >
           <h1 className="text-3xl sm:text-5xl md:text-8xl font-serif font-black tracking-tighter text-foreground italic mb-4 md:mb-6 drop-shadow-2xl">
             {heroContent[currentIndex]?.overlay_text || 'Experience Luxury'}
