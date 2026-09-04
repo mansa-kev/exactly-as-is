@@ -92,7 +92,7 @@ export function FloatingSupportWidget({ context = 'General Website Inquiry' }: F
   };
 
   return (
-    <div className="fixed bottom-28 right-6 md:bottom-8 md:right-8 z-[120] flex flex-col items-end">
+    <div className="fixed bottom-[100px] right-6 md:bottom-8 md:right-8 z-[120] flex flex-col items-end">
       
       <AnimatePresence>
         {/* Support Form Card */}

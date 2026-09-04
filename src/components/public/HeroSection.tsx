@@ -200,7 +200,7 @@ export function HeroSection() {
       </div>
 
       {/* Content Overlay */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 pb-24 md:pb-0 flex flex-col items-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

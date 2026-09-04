@@ -4,7 +4,7 @@ import { CarShowroom } from './CarShowroom';
 
 export function BrowseCars() {
   return (
-    <div className="pt-20">
+    <div>
       <Helmet>
         <title>Browse Models | Car Hire Nairobi — LinkedUp Cars Rentals</title>
         <meta name="description" content="Browse our vehicle models in Nairobi — luxury sedans, SUVs, budget cars and vans available for self-drive, chauffeur, airport transfers and corporate hire. Book instantly online." />

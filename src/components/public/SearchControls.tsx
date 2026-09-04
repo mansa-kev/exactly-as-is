@@ -21,7 +21,7 @@ export function SearchControls({ onSearch, initialParams }: { onSearch: (params:
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border py-3 md:py-4 px-4 md:px-6">
+    <div className="sticky top-16 md:top-20 z-50 bg-background/80 backdrop-blur-md border-b border-border py-3 md:py-4 px-4 md:px-6">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center">
         <div className="flex-1 flex items-center gap-2 px-4 py-2.5 md:py-3 bg-card border border-border rounded-2xl">
           <MapPin className="text-primary shrink-0" size={18} />
