@@ -76,30 +76,34 @@ export function HeroSection() {
       
       // Update UI and localStorage if content changed
       if (JSON.stringify(newContent) !== JSON.stringify(heroContent)) {
-        setHeroContent(newContent);
-        localStorage.setItem('linkedup_hero_image', JSON.stringify(newContent));
+        if (newContent.length > 0) {
+          setHeroContent(newContent);
+          localStorage.setItem('linkedup_hero_image', JSON.stringify(newContent));
+        } else {
+          throw new Error("No active hero images found in database");
+        }
       }
     } catch {
       const fallbackContent = [
         {
           id: '1',
           media_type: 'image',
-          media_url: 'https://picsum.photos/seed/luxury-car-1/1920/1080',
+          media_url: 'https://images.unsplash.com/photo-1503376713282-411394334f59?auto=format&fit=crop&w=1920&q=80',
           overlay_text: 'Experience the Pinnacle of Luxury',
           display_order: 0
         },
         {
           id: '2',
           media_type: 'image',
-          media_url: 'https://picsum.photos/seed/luxury-car-2/1920/1080',
+          media_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1920&q=80',
           overlay_text: 'Unforgettable Journeys Await',
           display_order: 1
         }
       ];
       
-      // Update with fallback content
+      // Update UI with fallback content, but do NOT cache it in localStorage.
+      // This ensures the next reload will attempt to fetch real data again.
       setHeroContent(fallbackContent);
-      localStorage.setItem('linkedup_hero_image', JSON.stringify(fallbackContent));
     } finally {
       setIsLoading(false);
     }
